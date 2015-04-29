@@ -11,19 +11,26 @@ using namespace std;
 using namespace FlyCapture2;
 
 const char* win_title = "image";
+const char* win_setting = "setting";
 
 Camera cam;
 static const unsigned int sk_numProps = 18;
 
 const char* expo_title = "Exposure Auto Off/On";
 const char* expo_value = "Exposure Value";
+const char* shut_title = "Shutter Auto Off/On";
+const char* shut_value = "Shutter Value";
 int exposureOnOff = 0;
 int exposureValue = 0;
 int oldExposureValue = 0;
 int shutterOnOff = 0;
+int shutterValue = 0;
+int oldShutterValue = 0;
 
 void on_slider_exposureOnOff(int, void*);
 void on_slider_exposureValue(int, void*);
+void on_slider_shutterOnOff(int, void*);
+void on_slider_shutterValue(int, void*);
 
 void PrintBuildInfo() {
     FC2Version fc2Version;
@@ -101,18 +108,27 @@ int RunSingleCamera( PGRGuid guid ) {
             continue;
         }
         if (camPropInfo.type == AUTO_EXPOSURE) {
-            cout << "EXPOSURE: " << camProp.autoManualMode << "  " << camProp.absValue << endl;
             exposureOnOff = camProp.autoManualMode;
             exposureValue = camProp.valueA;
             oldExposureValue = exposureValue;
-            cout << "abs mode:" << camProp.absControl << endl;
-            cout << "value A:" << camProp.valueA << endl; // INTEGER value (not in absolute mode)
-            cout << "value B:" << camProp.valueB << endl;
-            cout << "abs value:" << camProp.absValue << endl;
-            setTrackbarPos(expo_title, win_title, exposureOnOff);
-            setTrackbarPos(expo_value, win_title, exposureValue);
+            cout << "EXPOSURE: " << camProp.autoManualMode << endl;
+            cout << "-abs mode:" << camProp.absControl << endl;
+            cout << "-value A:" << camProp.valueA << endl; // INTEGER value (not in absolute mode)
+            cout << "-abs value:" << camProp.absValue << endl;
+            setTrackbarPos(expo_title, win_setting, exposureOnOff);
+            setTrackbarPos(expo_value, win_setting, exposureValue);
+        } else 
+        if (camPropInfo.type == SHUTTER) {
+            shutterOnOff = camProp.autoManualMode;
+            shutterValue = camProp.valueA;
+            oldShutterValue = shutterValue;
+            cout << "SHUTTER: " << camProp.autoManualMode << endl;
+            cout << "-abs mode:" << camProp.absControl << endl;
+            cout << "-value A:" << camProp.valueA << endl; // INTEGER value (not in absolute mode)
+            cout << "-abs value:" << camProp.absValue << endl;
+            setTrackbarPos(shut_title, win_setting, shutterOnOff);
+            setTrackbarPos(shut_value, win_setting, shutterValue);
         }
-        
     }
 
 
@@ -174,10 +190,12 @@ int main() {
     }
 
     namedWindow(win_title, WINDOW_NORMAL);
+    namedWindow(win_setting, WINDOW_NORMAL);
     // Setup trackbar
-    createTrackbar(expo_title, win_title, &exposureOnOff, 1, on_slider_exposureOnOff);
-    createTrackbar(expo_value, win_title, &exposureValue, 1022, on_slider_exposureValue);
-    createTrackbar("Shutter Auto Off/On", win_title, &shutterOnOff, 1, on_slider_exposureOnOff);
+    createTrackbar(expo_title, win_setting, &exposureOnOff, 1, on_slider_exposureOnOff);
+    createTrackbar(expo_value, win_setting, &exposureValue, 1023, on_slider_exposureValue);
+    createTrackbar(shut_title, win_setting, &shutterOnOff, 1, on_slider_shutterOnOff);
+    createTrackbar(shut_value, win_setting, &shutterValue, 1590, on_slider_shutterValue);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -211,7 +229,7 @@ void on_slider_exposureOnOff(int, void*) {
 
 void on_slider_exposureValue(int, void*) {
     if (exposureOnOff == 1) { // AUTO mode
-        setTrackbarPos(expo_value, win_title, oldExposureValue);
+        setTrackbarPos(expo_value, win_setting, oldExposureValue);
     } else {
         Error error;
         Property prop;
@@ -228,9 +246,54 @@ void on_slider_exposureValue(int, void*) {
         error = cam.SetProperty(&prop, false);
         if ( error != PGRERROR_OK ) {
             PrintError( error );
-            setTrackbarPos(expo_value, win_title, oldExposureValue);
+            setTrackbarPos(expo_value, win_setting, oldExposureValue);
         } else {
             oldExposureValue = exposureValue;
         }
     }
 }
+
+void on_slider_shutterOnOff(int, void*) {
+    Error error;
+    Property prop;
+    prop.type = SHUTTER;
+    error = cam.GetProperty(&prop);
+    if ( error != PGRERROR_OK) {
+        PrintError( error );
+    }
+
+    prop.absControl = false;
+    prop.onOff = true;
+    prop.autoManualMode = shutterOnOff;
+    error = cam.SetProperty(&prop, false);
+    if ( error != PGRERROR_OK ) {
+        PrintError ( error );
+    }
+}
+
+void on_slider_shutterValue(int, void*) {
+    if (shutterOnOff == 1) { // AUTO mode
+        setTrackbarPos(shut_value, win_setting, oldShutterValue);
+    } else {
+        Error error;
+        Property prop;
+        prop.type = SHUTTER;
+        error = cam.GetProperty(&prop);
+        if ( error != PGRERROR_OK) {
+            PrintError( error );
+        }
+
+        prop.absControl = false;
+        prop.onOff = true;
+        prop.autoManualMode = 0;
+        prop.valueA = shutterValue;
+        error = cam.SetProperty(&prop, false);
+        if ( error != PGRERROR_OK ) { 
+            PrintError( error );
+            setTrackbarPos(shut_value, win_setting, oldShutterValue);
+        } else {
+            oldShutterValue = shutterValue;
+        }
+    }   
+}
+
