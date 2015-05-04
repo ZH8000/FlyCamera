@@ -15,6 +15,10 @@ using namespace cv;
 using namespace std;
 using namespace FlyCapture2;
 
+bool ldown = false, lup = false;
+Point corner1, corner2, moving;
+Rect box;
+
 const char* win_title = "影像";
 const char* win_setting = "攝影機 設定";
 const char* win_opencv = "OpenCV 設定";
@@ -60,6 +64,8 @@ void on_slider_binaryMax(int, void*);
 void on_slider_binaryThresh(int, void*);
 void on_slider_ocrOnOff(int, void*);       // OCR
 void OCR();
+
+static void mouse_callback(int event, int x, int y, int, void *);
 
 void PrintBuildInfo() {
     FC2Version fc2Version;
@@ -168,6 +174,7 @@ int RunSingleCamera( PGRGuid guid ) {
         return -1;
     }
 
+    // setup Tesseract ocr engine
     tesseract::TessBaseAPI tess;
     tess.Init(NULL, "eng", tesseract::OEM_DEFAULT);
     tess.SetPageSegMode(tesseract::PSM_SINGLE_BLOCK);
@@ -184,6 +191,7 @@ int RunSingleCamera( PGRGuid guid ) {
         // Convert to RGB
         Image rgbImage;
         rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
+
         // convert to OpenCV Mat
         unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
@@ -192,6 +200,13 @@ int RunSingleCamera( PGRGuid guid ) {
             Mat bImage;
             Mat origImage = image.clone();
             threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
+        }
+
+        // handle mouse click event
+        if (ldown == true && lup == false) {
+            Point pt;
+            pt.x = x;
+            pt.y = y;
         }
 
         if (ocrOnOff == 1) {
@@ -265,6 +280,8 @@ int main() {
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
     createTrackbar(tess_title, win_opencv, &ocrOnOff, 1, on_slider_ocrOnOff);
 
+    setMouseCallback(win_title, mouse_callback);
+
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
         error = busMgr.GetCameraFromIndex(i, &guid);
@@ -275,6 +292,32 @@ int main() {
         RunSingleCamera( guid );
     }
     return 0;
+}
+
+static void mouse_callback(int event, int x, int y, int, void *) {
+    if (event == EVENT_LBUTTONDOWN) {
+        ldown = true;
+        corner1.x = x;
+        corner1.y = y;
+    }
+    if (event == EVENT_LBUTTONUP) {
+        lup = true;
+        corner2.x = x;
+        corner2.y = y;
+    }
+    if (ldown == true && lup == false) {
+        moving.x = x;
+        moving.y = y;
+    }
+    if (ldown == true && lup == true) {
+        box.width = abs(corner1.x - corner2.x);
+        box.height = abs(corner1.y - corner2.y);
+        box.x = min(corner1.x, corner2.x);
+        box.y = min(corner1.y, corner2.y);
+
+        ldown = false;
+        lup = false;
+    }
 }
 
 // EXPOSURE -start----------------------------
