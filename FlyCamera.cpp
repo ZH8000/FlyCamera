@@ -103,14 +103,14 @@ void PrintCameraInfo(CameraInfo* pCamInfo) {
         pCamInfo->firmwareBuildTime );
 }
 
-void PrintError( Error error ) {
+void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
 
 int RunSingleCamera( PGRGuid guid ) {
     const int k_numImages = 10;
 
-    Error error;
+    FlyCapture2::Error error;
 
     // Connect to a camera
     error = cam.Connect(&guid);
@@ -137,8 +137,8 @@ int RunSingleCamera( PGRGuid guid ) {
         camProp.type = k_currPropType;
         camPropInfo.type = k_currPropType;
 
-        Error getPropErr = cam.GetProperty( &camProp );
-        Error getPropInfoErr = cam.GetPropertyInfo( &camPropInfo );
+        FlyCapture2::Error getPropErr = cam.GetProperty( &camProp );
+        FlyCapture2::Error getPropInfoErr = cam.GetPropertyInfo( &camPropInfo );
         if ( getPropErr != PGRERROR_OK || getPropInfoErr != PGRERROR_OK ||  camPropInfo.present == false) {
             continue;
         }
@@ -203,11 +203,12 @@ int RunSingleCamera( PGRGuid guid ) {
         }
 
         // handle mouse click event
+        /*
         if (ldown == true && lup == false) {
             Point pt;
             pt.x = x;
             pt.y = y;
-        }
+        }*/
 
         if (ocrOnOff == 1) {
             ocrOnOff = 0;
@@ -255,7 +256,7 @@ int RunSingleCamera( PGRGuid guid ) {
 int main() {
     PrintBuildInfo();
 
-    Error error;
+    FlyCapture2::Error error;
     BusManager busMgr;
     unsigned int numCameras;
 
@@ -322,7 +323,7 @@ static void mouse_callback(int event, int x, int y, int, void *) {
 
 // EXPOSURE -start----------------------------
 void on_slider_exposureOnOff(int, void*) {
-    Error error;
+    FlyCapture2::Error error;
     Property prop;
     prop.type = AUTO_EXPOSURE;
     error = cam.GetProperty(&prop);
@@ -343,7 +344,7 @@ void on_slider_exposureValue(int, void*) {
     if (exposureOnOff == 1) { // AUTO mode
         setTrackbarPos(expo_value, win_setting, oldExposureValue);
     } else {
-        Error error;
+        FlyCapture2::Error error;
         Property prop;
         prop.type = AUTO_EXPOSURE;
         error = cam.GetProperty(&prop);
@@ -368,7 +369,7 @@ void on_slider_exposureValue(int, void*) {
 
 // SHARPNESS -start---------------------------
 void on_slider_sharpnessOnOff(int, void*) {
-    Error error;
+    FlyCapture2::Error error;
     Property prop;
     prop.type = AUTO_EXPOSURE;
     error = cam.GetProperty(&prop);
@@ -389,7 +390,7 @@ void on_slider_sharpnessValue(int, void*) {
     if (sharpnessOnOff == 1) { // AUTO mode
         setTrackbarPos(shar_value, win_setting, oldSharpnessValue);
     } else {
-        Error error;
+        FlyCapture2::Error error;
         Property prop;
         prop.type = SHARPNESS;
         error = cam.GetProperty(&prop);
@@ -414,7 +415,7 @@ void on_slider_sharpnessValue(int, void*) {
 
 // SHUTTER -start-----------------------------
 void on_slider_shutterOnOff(int, void*) {
-    Error error;
+    FlyCapture2::Error error;
     Property prop;
     prop.type = SHUTTER;
     error = cam.GetProperty(&prop);
@@ -435,7 +436,7 @@ void on_slider_shutterValue(int, void*) {
     if (shutterOnOff == 1) { // AUTO mode
         setTrackbarPos(shut_value, win_setting, oldShutterValue);
     } else {
-        Error error;
+        FlyCapture2::Error error;
         Property prop;
         prop.type = SHUTTER;
         error = cam.GetProperty(&prop);
