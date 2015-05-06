@@ -10,13 +10,18 @@ using namespace cv;
 const float inlier_threshold = 2.5f; 
 const float nn_match_ratio = 0.8f;   
 
-int main(void)
+int main(int argc, char** argv)
 {
-    Mat img1 = imread("test1.png", IMREAD_GRAYSCALE);
-    Mat img2 = imread("test2.png", IMREAD_GRAYSCALE);
+    if (argc != 4) {
+        cerr << "error input arguments" << endl;
+        cerr << "it shoud be: ./app img1 img2 H1toN" << endl;
+    }
+
+    Mat img1 = imread(argv[1], IMREAD_GRAYSCALE);
+    Mat img2 = imread(argv[2], IMREAD_GRAYSCALE);
 
     Mat homography;
-    FileStorage fs("database.xml", FileStorage::READ);
+    FileStorage fs(argv[3], FileStorage::READ);
     fs.getFirstTopLevelNode() >> homography;
 
     vector<KeyPoint> kpts1, kpts2;
