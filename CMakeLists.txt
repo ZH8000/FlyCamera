@@ -5,5 +5,6 @@ find_package( OpenCV REQUIRED )
 set( FLYCAP_INCLUDE "/usr/include/flycapture" )
 include_directories( ${FLYCAP_INCLUDE} )
 
-add_executable( app FlyCamera.cpp )
+#add_executable( app FlyCamera.cpp )
+add_executable( app AlexMatch.cpp )
 target_link_libraries( app ${OpenCV_LIBS} -lflycapture tesseract )
