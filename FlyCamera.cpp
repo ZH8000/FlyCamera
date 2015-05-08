@@ -1,8 +1,11 @@
 #include <FlyCapture2.h>
 
+#include <ctime>
 #include <iostream>
 #include <stdio.h>
 #include <stdexcept>
+#include <sstream>
+#include <string>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -179,8 +182,14 @@ int RunSingleCamera( PGRGuid guid ) {
     tess.Init(NULL, "eng", tesseract::OEM_DEFAULT);
     tess.SetPageSegMode(tesseract::PSM_SINGLE_BLOCK);
 
-    Image rawImage;    
-    while (char(waitKey(50)) != 'q') {                
+    Image rawImage;
+    char c;   
+    while (true) {
+        c = waitKey(50);
+        if (c == 'q') {
+            return 0;
+        }
+
         // Retrieve an image
         error = cam.RetrieveBuffer( &rawImage );
         if (error != PGRERROR_OK) {
@@ -232,6 +241,30 @@ int RunSingleCamera( PGRGuid guid ) {
 
         imshow(win_title, image);
 
+        if (c == 's') {
+            /*
+            time_t t = time(0);
+            struct tm * now = localtime( & t );
+            string s;
+            stringstream ss(s);
+            ss << (now->tm_year + 1900) << "-"
+               << (now->tm_mon + 1) << "-"
+               << now->tm_mday << "_"
+               << now->tm_hour << "-"
+               << now->tm_min << "-"
+               << now->tm_sec
+               << endl;*/
+            time_t rawtime;
+            struct tm * timeinfo;
+            char buffer[80];
+            time (&rawtime);
+            timeinfo = localtime(&rawtime);
+            strftime(buffer, 80, "%Y-%m-%d_%I-%M-%S", timeinfo);
+            string str(buffer);
+            imwrite(str + ".png", image);
+            cout << "Capture image " << str << ".png" << endl;
+        }
+
 //        Mat binaryImage;
 //        threshold(image, binaryImage, 30., 255., CV_THRESH_BINARY);
 //        imshow("bw image", binaryImage);
@@ -254,6 +287,10 @@ int RunSingleCamera( PGRGuid guid ) {
 }
 
 int main() {
+
+    cout << "Press 'q' to quit" << endl;
+    cout << "Press 's' to take a picture" << endl;
+
     PrintBuildInfo();
 
     FlyCapture2::Error error;
