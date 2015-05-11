@@ -32,7 +32,6 @@ int oldBinaryMax = 100;
 int binaryThresh = 30;
 int oldBinaryThresh = 30;
 
-
 Camera cam;
 static const unsigned int sk_numProps = 18;
 
@@ -60,11 +59,13 @@ void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
 
+int RunSingleCamera( PGRGuid guid );
+
 int main(int argc, char** argv)
 {
-    if (argc != 4) {
+    if (argc != 2) {
         cerr << "error input arguments" << endl;
-        cerr << "it shoud be: ./app img1 img2 H1toN" << endl;
+        cerr << "it shoud be: ./app H1toN.xml" << endl;
 
         return -1;
     }
@@ -82,6 +83,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    namedWindow(win_title, WINDOW_NORMAL);
+    namedWindow(win_setting, WINDOW_NORMAL);
+    namedWindow(win_opencv, WINDOW_NORMAL);
+
     createTrackbar(expo_title, win_setting, &exposureOnOff, 1, on_slider_exposureOnOff);
     createTrackbar(expo_value, win_setting, &exposureValue, 1023, on_slider_exposureValue);
     createTrackbar(shar_title, win_setting, &sharpnessOnOff, 1, on_slider_sharpnessOnOff);
@@ -92,11 +97,26 @@ int main(int argc, char** argv)
     createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
 
-    Mat img1 = imread(argv[1], IMREAD_GRAYSCALE);
-    Mat img2 = imread(argv[2], IMREAD_GRAYSCALE);
+    for (unsigned int i=0; i < numCameras; i++) {
+        PGRGuid guid;
+        error = busMgr.GetCameraFromIndex(i, &guid);
+        if (error != PGRERROR_OK) {
+            PrintError( error );
+            return -1; 
+        }
+        RunSingleCamera( guid );
+    }   
+
+
+    return 0;
+}
+
+void Match(Mat img1, Mat img2) {
+//    Mat img1 = imread(argv[1], IMREAD_GRAYSCALE);
+//    Mat img2 = imread(argv[2], IMREAD_GRAYSCALE);
 
     Mat homography;
-    FileStorage fs(argv[3], FileStorage::READ);
+    FileStorage fs("H1to3p.xml", FileStorage::READ);
     fs.getFirstTopLevelNode() >> homography;
 
     vector<KeyPoint> kpts1, kpts2;
@@ -154,8 +174,6 @@ int main(int argc, char** argv)
     cout << "# Inliers:                            \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
     cout << endl;
-
-    return 0;
 }
 
 int RunSingleCamera( PGRGuid guid ) {
@@ -456,4 +474,3 @@ void on_slider_binaryThresh(int, void*) {
     }
 }
 // BINARIZATION -end--------------------------
-
