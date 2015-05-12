@@ -34,6 +34,7 @@ int oldBinaryThresh = 30;
 
 Camera cam;
 static const unsigned int sk_numProps = 18;
+bool sampled = false;
 
 const char* expo_title = "自動曝光 Off/On";
 const char* expo_value = "手動曝光值";
@@ -63,15 +64,9 @@ int RunSingleCamera( PGRGuid guid );
 
 int main(int argc, char** argv)
 {
-    if (argc != 2) {
-        cerr << "error input arguments" << endl;
-        cerr << "it shoud be: ./app H1toN.xml" << endl;
-
-        return -1;
-    }
-
     cout << "Press 'q' to quit" << endl;
     cout << "Press 's' to take a picture" << endl;
+    cout << "Press 'r' to reset sample" << endl;
 
     FlyCapture2::Error error;
     BusManager busMgr;
@@ -107,13 +102,12 @@ int main(int argc, char** argv)
         RunSingleCamera( guid );
     }   
 
-
     return 0;
 }
 
-void Match(Mat img1, Mat img2) {
-//    Mat img1 = imread(argv[1], IMREAD_GRAYSCALE);
-//    Mat img2 = imread(argv[2], IMREAD_GRAYSCALE);
+void Match() {
+    Mat img1 = imread("sample.png", IMREAD_GRAYSCALE);
+    Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
 
     Mat homography;
     FileStorage fs("H1to3p.xml", FileStorage::READ);
@@ -240,6 +234,9 @@ int RunSingleCamera( PGRGuid guid ) {
         if (c == 'q') {
             return 0;
         }
+        if (c == 'r') {
+            sampled = false;
+        }
 
         // Retrieve an image
         error = cam.RetrieveBuffer( &rawImage );
@@ -273,27 +270,16 @@ int RunSingleCamera( PGRGuid guid ) {
         imshow(win_title, image);
 
         if (c == 's') {
-            /*
-            time_t t = time(0);
-            struct tm * now = localtime( & t );
-            string s;
-            stringstream ss(s);
-            ss << (now->tm_year + 1900) << "-"
-               << (now->tm_mon + 1) << "-"
-               << now->tm_mday << "_"
-               << now->tm_hour << "-"
-               << now->tm_min << "-"
-               << now->tm_sec
-               << endl;*/
-            time_t rawtime;
-            struct tm * timeinfo;
-            char buffer[80];
-            time (&rawtime);
-            timeinfo = localtime(&rawtime);
-            strftime(buffer, 80, "%Y-%m-%d_%I-%M-%S", timeinfo);
-            string str(buffer);
-            imwrite(str + ".png", image);
-            cout << "Capture image " << str << ".png" << endl;
+            if (!sampled) {
+                imwrite("sample.png", image);
+                sampled = true;
+            } else {
+                
+                imwrite("target.png", image);
+                cout << "get target !" << endl;
+
+                Match();
+            }
         }
 
 //        Mat binaryImage;
