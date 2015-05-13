@@ -4,6 +4,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
+#include <ctime>
 #include <vector>
 #include <iostream>
 
@@ -65,7 +66,7 @@ int RunSingleCamera( PGRGuid guid );
 int main(int argc, char** argv)
 {
     cout << "Press 'q' to quit" << endl;
-    cout << "Press 's' to take a picture" << endl;
+    cout << "Press 's' to start sampling" << endl;
     cout << "Press 'r' to reset sample" << endl;
 
     FlyCapture2::Error error;
@@ -236,6 +237,7 @@ int RunSingleCamera( PGRGuid guid ) {
         }
         if (c == 'r') {
             sampled = false;
+            cout << "-------Reset Sampling-------" << endl;
         }
 
         // Retrieve an image
@@ -273,12 +275,26 @@ int RunSingleCamera( PGRGuid guid ) {
             if (!sampled) {
                 imwrite("sample.png", image);
                 sampled = true;
+                cout << "-----Get Sampled Image-----" << endl;
             } else {
                 
                 imwrite("target.png", image);
-                cout << "get target !" << endl;
+
+                // print start time
+                time_t t_s = time(0);
+                struct tm * now = localtime( &t_s );
+                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
 
                 Match();
+
+                // print end time
+                time_t t_e = time(0);
+                struct tm * now_e = localtime( &t_e );
+                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
+
+                namedWindow("AKAZE 比對結果", WINDOW_NORMAL);
+                Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
+                imshow("AKAZE 比對結果", res);
             }
         }
 
