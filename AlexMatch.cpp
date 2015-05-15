@@ -32,6 +32,10 @@ int binaryMax =  100;          // binarization max value will between 0(+150) ~ 
 int oldBinaryMax = 100;
 int binaryThresh = 30;
 int oldBinaryThresh = 30;
+// int blurOnOff = 0;             // Gaussian Blur
+// int blurValue = 0;
+// int oldBlurValue = 0;
+int successMatches = 100;      // AKAZE matches
 
 Camera cam;
 static const unsigned int sk_numProps = 18;
@@ -45,7 +49,10 @@ const char* shut_title = "自動快門 Off/On";
 const char* shut_value = "手動快門值";
 const char* bina_title = "影像二元化 Off/ On";
 const char* bina_max = "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
-const char* bina_thresh = "影像二元化閥值";      // binarization thresh will between 0 ~ 150
+const char* bina_thresh = "影像二元化閥值";            // binarization thresh will between 0 ~ 150
+// const char* blur_title = "高斯模糊 Off/On";
+// const char* blur_value = "高斯模糊 Kernel";
+const char* succ_matches = "辦別成功最低Match值";
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -56,6 +63,7 @@ void on_slider_shutterValue(int, void*);
 void on_slider_binaryOnOff(int, void*);    // binarization
 void on_slider_binaryMax(int, void*);
 void on_slider_binaryThresh(int, void*);
+void on_slider_successMatches(int, void*);   // success Matches value
 
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
@@ -92,6 +100,7 @@ int main(int argc, char** argv)
     createTrackbar(bina_title, win_opencv, &binaryOnOff, 1, on_slider_binaryOnOff);
     createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
+    createTrackbar(succ_matches, win_opencv, &successMatches, 4000, on_slider_successMatches);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -107,9 +116,17 @@ int main(int argc, char** argv)
 }
 
 void Match() {
+   
     Mat img1 = imread("sample.png", IMREAD_GRAYSCALE);
     Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
+#if 0
+ int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
+    GaussianBlur(imag1, img1, Size(3, 3), sigma);
+    GaussianBlur(imag2, img2, Size(3, 3), sigma);
 
+    Canny(img1, img1, 10, 50, 3);
+    Canny(img2, img2, 10, 50, 3);
+#endif    
     Mat homography;
     FileStorage fs("H1to3p.xml", FileStorage::READ);
     fs.getFirstTopLevelNode() >> homography;
@@ -258,7 +275,7 @@ int RunSingleCamera( PGRGuid guid ) {
         if (binaryOnOff == 1) {
             Mat bImage;
             Mat origImage = image.clone();
-            threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
+            threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
         }
 
         // handle mouse click event
@@ -476,3 +493,7 @@ void on_slider_binaryThresh(int, void*) {
     }
 }
 // BINARIZATION -end--------------------------
+// SUCCESS MATCHS -start----------------------
+void on_slider_successMatches(int, void*) {
+}
+// SUCCESS MATCHS -end------------------------
