@@ -175,6 +175,12 @@ void Match() {
 
     Mat res;
     drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
+    Point pt = Point(100, 100);
+    if (matched1.size() >= successMatches) {
+        putText(res, "Succeed!", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+    } else {
+        putText(res, "Failed", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+    }
     imwrite("res.png", res);
 
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
@@ -275,7 +281,8 @@ int RunSingleCamera( PGRGuid guid ) {
         if (binaryOnOff == 1) {
             Mat bImage;
             Mat origImage = image.clone();
-            threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
+            // threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
+            threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
         }
 
         // handle mouse click event
