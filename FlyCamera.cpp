@@ -205,6 +205,10 @@ int RunSingleCamera( PGRGuid guid ) {
         unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
 
+	 int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
+    	GaussianBlur(image, image, Size(3, 3), sigma);
+    	//Canny(image, image, 10, 50, 3);
+
         if (binaryOnOff == 1) {
             Mat bImage;
             Mat origImage = image.clone();
