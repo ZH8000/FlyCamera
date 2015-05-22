@@ -119,6 +119,8 @@ void Match() {
    
     Mat img1 = imread("sample.png", IMREAD_GRAYSCALE);
     Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
+    // Mat img1 = imread("../16v1500uF/0.png", IMREAD_GRAYSCALE);
+    // Mat img2 = imread("../400v68uF/3.png", IMREAD_GRAYSCALE);
 #if 0
  int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
     GaussianBlur(imag1, img1, Size(3, 3), sigma);
@@ -309,7 +311,15 @@ int RunSingleCamera( PGRGuid guid ) {
                 struct tm * now = localtime( &t_s );
                 cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
 
+                clock_t start, end;
+                double duration;
+                start = clock();
+
                 Match();
+
+                end = clock();
+                duration = (double)(end - start) / CLOCKS_PER_SEC;
+                cout << "Duration: "  << duration << endl;
 
                 // print end time
                 time_t t_e = time(0);
