@@ -65,6 +65,9 @@ void on_slider_binaryMax(int, void*);
 void on_slider_binaryThresh(int, void*);
 void on_slider_successMatches(int, void*);   // success Matches value
 
+Mat sample;
+Mat target;
+
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
@@ -130,7 +133,7 @@ void Match() {
     Canny(img2, img2, 10, 50, 3);
 #endif    
     Mat homography;
-    FileStorage fs("H1to3p.xml", FileStorage::READ);
+    FileStorage fs("../H1to3p.xml", FileStorage::READ);
     fs.getFirstTopLevelNode() >> homography;
 
     vector<KeyPoint> kpts1, kpts2;
