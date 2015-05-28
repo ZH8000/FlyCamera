@@ -17,16 +17,14 @@ const float nn_match_ratio = 0.8f;
 const char* win_title = "影像";
 const char* win_setting = "攝影機 設定";
 const char* win_opencv = "OpenCV 設定";
+const char* win_akaze = "AKAZE 比對結果";
 
 int exposureOnOff = 0;         // exposure
 int exposureValue = 0;
-int oldExposureValue = 0;
 int sharpnessOnOff = 0;        // sharpness
 int sharpnessValue = 3000;
-int oldSharpnessValue = 3000;
 int shutterOnOff = 0;          // shutter
 int shutterValue = 0;
-int oldShutterValue = 0;
 int binaryOnOff = 0;           // binarization
 int binaryMax =  100;          // binarization max value will between 0(+150) ~ 150(+150), p.s. actually value should plus 150, so 150~300
 int oldBinaryMax = 100;
@@ -50,8 +48,8 @@ const char* shut_value = "手動快門值";
 const char* bina_title = "影像二元化 Off/ On";
 const char* bina_max = "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
 const char* bina_thresh = "影像二元化閥值";            // binarization thresh will between 0 ~ 150
-// const char* blur_title = "高斯模糊 Off/On";
-// const char* blur_value = "高斯模糊 Kernel";
+const char* blur_title = "高斯模糊 Off/On";
+const char* blur_value = "高斯模糊 Kernel 大小";
 const char* succ_matches = "辦別成功最低Match值";
 
 void on_slider_exposureOnOff(int, void*);  // exposure
@@ -60,10 +58,8 @@ void on_slider_sharpnessOnOff(int, void*); // sharpness
 void on_slider_sharpnessValue(int, void*);
 void on_slider_shutterOnOff(int, void*);   // shutter
 void on_slider_shutterValue(int, void*);
-void on_slider_binaryOnOff(int, void*);    // binarization
-void on_slider_binaryMax(int, void*);
+void on_slider_binaryMax(int, void*);      // binarization
 void on_slider_binaryThresh(int, void*);
-void on_slider_successMatches(int, void*);   // success Matches value
 
 Mat sampleImage;
 Mat targetImage;
@@ -72,6 +68,7 @@ void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
 
+void getCameraProp(Camera*);
 int RunSingleCamera( PGRGuid guid );
 
 int main(int argc, char** argv)
@@ -100,10 +97,10 @@ int main(int argc, char** argv)
     createTrackbar(shar_value, win_setting, &sharpnessValue, 4095, on_slider_sharpnessValue);
     createTrackbar(shut_title, win_setting, &shutterOnOff, 1, on_slider_shutterOnOff);
     createTrackbar(shut_value, win_setting, &shutterValue, 1590, on_slider_shutterValue);
-    createTrackbar(bina_title, win_opencv, &binaryOnOff, 1, on_slider_binaryOnOff);
+    createTrackbar(bina_title, win_opencv, &binaryOnOff, 1);
     createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
-    createTrackbar(succ_matches, win_opencv, &successMatches, 4000, on_slider_successMatches);
+    createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -124,10 +121,8 @@ void Match() {
     // Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
     // Mat img1 = imread("../16v1500uF/0.png", IMREAD_GRAYSCALE);
     // Mat img2 = imread("../400v68uF/3.png", IMREAD_GRAYSCALE);
-    Mat img1;
-    Mat img2;
-    sampleImage.copyTo(img1);
-    targetImage.copyTo(img2);
+    // sampleImage = imread("../16v1500uF/0.png", IMREAD_GRAYSCALE);
+    // targetImage = imread("../400v68uF/3.png", IMREAD_GRAYSCALE);
 
 #if 0
  int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
@@ -145,8 +140,8 @@ void Match() {
     Mat desc1, desc2;
 
     Ptr<AKAZE> akaze = AKAZE::create();
-    akaze->detectAndCompute(img1, noArray(), kpts1, desc1);
-    akaze->detectAndCompute(img2, noArray(), kpts2, desc2);
+    akaze->detectAndCompute(sampleImage, noArray(), kpts1, desc1);
+    akaze->detectAndCompute(targetImage, noArray(), kpts2, desc2);
 
     BFMatcher matcher(NORM_HAMMING);
     vector< vector<DMatch> > nn_matches;
@@ -184,14 +179,16 @@ void Match() {
     }
 
     Mat res;
-    drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
+    drawMatches(sampleImage, inliers1, targetImage, inliers2, good_matches, res);
     Point pt = Point(100, 100);
     if (matched1.size() >= successMatches) {
         putText(res, "Succeed!", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
     } else {
         putText(res, "Failed", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
     }
-    imwrite("res.png", res);
+    //imwrite("res.png", res);
+    namedWindow(win_akaze, WINDOW_NORMAL);
+    imshow(win_akaze, res);
 
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
     cout << "Alex Matching Results" << endl;
@@ -202,6 +199,56 @@ void Match() {
     cout << "# Inliers:                            \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
     cout << endl;
+}
+
+void getCameraProp(Camera* cam) {
+    const int k_numImages = 10;
+    FlyCapture2::Error error;
+
+    Property camProp;
+    PropertyInfo camPropInfo;
+    for (unsigned int x = 0; x < sk_numProps; x++) {
+        const PropertyType k_currPropType = (PropertyType)x;
+        camProp.type = k_currPropType;
+        camPropInfo.type = k_currPropType;
+
+        FlyCapture2::Error getPropErr = cam->GetProperty( &camProp );
+        FlyCapture2::Error getPropInfoErr = cam->GetPropertyInfo( &camPropInfo );
+        if ( getPropErr != PGRERROR_OK || getPropInfoErr != PGRERROR_OK ||  camPropInfo.present == false) {
+            continue;
+        }
+        if (BRIGHTNESS) {
+        } else
+        if (camPropInfo.type == AUTO_EXPOSURE) {
+            exposureOnOff = camProp.autoManualMode;
+            exposureValue = camProp.valueA;
+
+            setTrackbarPos(expo_title, win_setting, exposureOnOff);
+            setTrackbarPos(expo_value, win_setting, exposureValue);
+        } else
+        if (camPropInfo.type == SHARPNESS) {
+            sharpnessOnOff = camProp.autoManualMode;
+            sharpnessValue = camProp.valueA;
+
+            setTrackbarPos(shar_title, win_setting, sharpnessOnOff);
+            setTrackbarPos(shar_value, win_setting, sharpnessValue);
+        } else
+        if (camPropInfo.type == GAMMA) {
+        } else
+        if (camPropInfo.type == SHUTTER) {
+            shutterOnOff = camProp.autoManualMode;
+            shutterValue = camProp.valueA;
+
+            setTrackbarPos(shut_title, win_setting, shutterOnOff);
+            setTrackbarPos(shut_value, win_setting, shutterValue);
+        } else
+        if (camPropInfo.type == GAIN) {
+        } else
+        if (camPropInfo.type == FRAME_RATE) {
+        } else 
+        if (camPropInfo.type == TEMPERATURE) {
+        }
+    }
 }
 
 int RunSingleCamera( PGRGuid guid ) {
@@ -216,43 +263,7 @@ int RunSingleCamera( PGRGuid guid ) {
         return -1;
     }
 
-    // Get the camera property
-    Property camProp;
-    PropertyInfo camPropInfo;    
-    for (unsigned int x = 0; x < sk_numProps; x++) {
-        const PropertyType k_currPropType = (PropertyType)x;
-        camProp.type = k_currPropType;
-        camPropInfo.type = k_currPropType;
-
-        FlyCapture2::Error getPropErr = cam.GetProperty( &camProp );
-        FlyCapture2::Error getPropInfoErr = cam.GetPropertyInfo( &camPropInfo );
-        if ( getPropErr != PGRERROR_OK || getPropInfoErr != PGRERROR_OK ||  camPropInfo.present == false) {
-            continue;
-        }
-        if (camPropInfo.type == AUTO_EXPOSURE) {
-            exposureOnOff = camProp.autoManualMode;
-            exposureValue = camProp.valueA;
-            oldExposureValue = exposureValue;
-            cout << "EXPOSURE: " << camProp.autoManualMode << endl;
-            cout << "-abs mode:" << camProp.absControl << endl;
-            cout << "-value A:" << camProp.valueA << endl; // INTEGER value (not in absolute mode)
-            cout << "-abs value:" << camProp.absValue << endl;
-            setTrackbarPos(expo_title, win_setting, exposureOnOff);
-            setTrackbarPos(expo_value, win_setting, exposureValue);
-        } else 
-        if (camPropInfo.type == SHUTTER) {
-            shutterOnOff = camProp.autoManualMode;
-            shutterValue = camProp.valueA;
-            oldShutterValue = shutterValue;
-            cout << "SHUTTER: " << camProp.autoManualMode << endl;
-            cout << "-abs mode:" << camProp.absControl << endl;
-            cout << "-value A:" << camProp.valueA << endl; // INTEGER value (not in absolute mode)
-            cout << "-abs value:" << camProp.absValue << endl;
-            setTrackbarPos(shut_title, win_setting, shutterOnOff);
-            setTrackbarPos(shut_value, win_setting, shutterValue);
-        }
-    }
-
+//    getCameraProp(&cam);
 
     // Start capturing images
     error = cam.StartCapture();
@@ -262,9 +273,12 @@ int RunSingleCamera( PGRGuid guid ) {
     }
 
     Image rawImage;
+    Image rgbImage;
     char c;   
     while (true) {
-        c = waitKey(50);
+        c = waitKey(30);
+
+        getCameraProp(&cam);
         if (c == 'q') {
             return 0;
         }
@@ -281,7 +295,6 @@ int RunSingleCamera( PGRGuid guid ) {
         }
 
         // Convert to RGB
-        Image rgbImage;
         rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
 
         // convert to OpenCV Mat
@@ -307,12 +320,12 @@ int RunSingleCamera( PGRGuid guid ) {
 
         if (c == 's') {
             if (!sampled) {
-                imwrite("sample.png", image);
+                // imwrite("sample.png", image);
                 image.copyTo(sampleImage);
                 sampled = true;
                 cout << "-----Get Sampled Image-----" << endl;
             } else {
-                imwrite("target.png", image);
+                // imwrite("target.png", image);
                 image.copyTo(targetImage);
 
                 // print start time
@@ -335,9 +348,9 @@ int RunSingleCamera( PGRGuid guid ) {
                 struct tm * now_e = localtime( &t_e );
                 cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
 
-                namedWindow("AKAZE 比對結果", WINDOW_NORMAL);
-                Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
-                imshow("AKAZE 比對結果", res);
+                // namedWindow("AKAZE 比對結果", WINDOW_NORMAL);
+                // Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
+                // imshow("AKAZE 比對結果", res);
             }
         }
 
@@ -362,11 +375,27 @@ int RunSingleCamera( PGRGuid guid ) {
     return 0;
 }
 
-// EXPOSURE -start----------------------------
-void on_slider_exposureOnOff(int, void*) {
+void setParamAutoOnOff(PropertyType type, int onOff) {
     FlyCapture2::Error error;
     Property prop;
-    prop.type = AUTO_EXPOSURE;
+    prop.type = type;
+    error = cam.GetProperty(&prop);
+    if ( error != PGRERROR_OK) {
+        PrintError( error );
+    }
+    prop.absControl = false;
+    prop.onOff = true;
+    prop.autoManualMode = onOff; 
+    error = cam.SetProperty(&prop, false);
+    if ( error != PGRERROR_OK ) {
+        PrintError ( error );
+    }
+}
+
+void setParamValue(PropertyType type, int value) {
+    FlyCapture2::Error error;
+    Property prop;
+    prop.type = type;
     error = cam.GetProperty(&prop);
     if ( error != PGRERROR_OK) {
         PrintError( error );
@@ -374,62 +403,34 @@ void on_slider_exposureOnOff(int, void*) {
 
     prop.absControl = false;
     prop.onOff = true;
-    prop.autoManualMode = exposureOnOff; 
+    prop.autoManualMode = 0;
+    prop.valueA = value;
     error = cam.SetProperty(&prop, false);
     if ( error != PGRERROR_OK ) {
-        PrintError ( error );
+        PrintError( error );
+    } else {
     }
 }
 
-void on_slider_exposureValue(int, void*) {
-    if (exposureOnOff == 1) { // AUTO mode
-        setTrackbarPos(expo_value, win_setting, oldExposureValue);
-    } else {
-        FlyCapture2::Error error;
-        Property prop;
-        prop.type = AUTO_EXPOSURE;
-        error = cam.GetProperty(&prop);
-        if ( error != PGRERROR_OK) {
-            PrintError( error );
-        }
+// EXPOSURE -start----------------------------
+void on_slider_exposureOnOff(int, void*) {
+    setParamAutoOnOff(AUTO_EXPOSURE, exposureOnOff);
+}
 
-        prop.absControl = false;
-        prop.onOff = true;
-        prop.autoManualMode = 0;
-        prop.valueA = exposureValue;
-        error = cam.SetProperty(&prop, false);
-        if ( error != PGRERROR_OK ) {
-            PrintError( error );
-            setTrackbarPos(expo_value, win_setting, oldExposureValue);
-        } else {
-            oldExposureValue = exposureValue;
-        }
+void on_slider_exposureValue(int, void*) {
+    if (exposureOnOff == 0) { // MANUAL mode
+        setParamValue(AUTO_EXPOSURE, exposureValue);
     }
 }
 // EXPOSURE -end------------------------------
 
 // SHARPNESS -start---------------------------
 void on_slider_sharpnessOnOff(int, void*) {
-    FlyCapture2::Error error;
-    Property prop;
-    prop.type = AUTO_EXPOSURE;
-    error = cam.GetProperty(&prop);
-    if ( error != PGRERROR_OK) {
-        PrintError( error );
-    }
-
-    prop.absControl = false;
-    prop.onOff = true;
-    prop.autoManualMode = sharpnessOnOff; 
-    error = cam.SetProperty(&prop, false);
-    if ( error != PGRERROR_OK ) {
-        PrintError ( error );
-    }
+    setParamAutoOnOff(SHARPNESS, sharpnessOnOff);
 }
 
 void on_slider_sharpnessValue(int, void*) {
     if (sharpnessOnOff == 1) { // AUTO mode
-        setTrackbarPos(shar_value, win_setting, oldSharpnessValue);
     } else {
         FlyCapture2::Error error;
         Property prop;
@@ -446,9 +447,7 @@ void on_slider_sharpnessValue(int, void*) {
         error = cam.SetProperty(&prop, false);
         if ( error != PGRERROR_OK ) {
             PrintError( error );
-            setTrackbarPos(shar_value, win_setting, oldSharpnessValue);
         } else {
-            oldSharpnessValue = sharpnessValue;
         }
     }
 }
@@ -456,26 +455,11 @@ void on_slider_sharpnessValue(int, void*) {
 
 // SHUTTER -start-----------------------------
 void on_slider_shutterOnOff(int, void*) {
-    FlyCapture2::Error error;
-    Property prop;
-    prop.type = SHUTTER;
-    error = cam.GetProperty(&prop);
-    if ( error != PGRERROR_OK) {
-        PrintError( error );
-    }
-
-    prop.absControl = false;
-    prop.onOff = true;
-    prop.autoManualMode = shutterOnOff;
-    error = cam.SetProperty(&prop, false);
-    if ( error != PGRERROR_OK ) {
-        PrintError ( error );
-    }
+    setParamAutoOnOff(SHUTTER, shutterOnOff);
 }
 
 void on_slider_shutterValue(int, void*) {
     if (shutterOnOff == 1) { // AUTO mode
-        setTrackbarPos(shut_value, win_setting, oldShutterValue);
     } else {
         FlyCapture2::Error error;
         Property prop;
@@ -492,17 +476,13 @@ void on_slider_shutterValue(int, void*) {
         error = cam.SetProperty(&prop, false);
         if ( error != PGRERROR_OK ) { 
             PrintError( error );
-            setTrackbarPos(shut_value, win_setting, oldShutterValue);
         } else {
-            oldShutterValue = shutterValue;
         }
     }   
 }
 // SHUTTER -end-------------------------------
 
 // BINARIZATION -start------------------------
-void on_slider_binaryOnOff(int, void*) {}
-
 void on_slider_binaryMax(int, void*) {
     if (binaryOnOff == 0) {
         setTrackbarPos(bina_max, win_opencv, oldBinaryMax);
@@ -519,7 +499,3 @@ void on_slider_binaryThresh(int, void*) {
     }
 }
 // BINARIZATION -end--------------------------
-// SUCCESS MATCHS -start----------------------
-void on_slider_successMatches(int, void*) {
-}
-// SUCCESS MATCHS -end------------------------
