@@ -302,10 +302,8 @@ int RunSingleCamera( PGRGuid guid ) {
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
 
         if (binaryOnOff == 1) {
-            Mat bImage;
-            Mat origImage = image.clone();
             // threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
-            threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
+            threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
         }
 
         // handle mouse click event
@@ -430,25 +428,8 @@ void on_slider_sharpnessOnOff(int, void*) {
 }
 
 void on_slider_sharpnessValue(int, void*) {
-    if (sharpnessOnOff == 1) { // AUTO mode
-    } else {
-        FlyCapture2::Error error;
-        Property prop;
-        prop.type = SHARPNESS;
-        error = cam.GetProperty(&prop);
-        if ( error != PGRERROR_OK) {
-            PrintError( error );
-        }
-
-        prop.absControl = false;
-        prop.onOff = true;
-        prop.autoManualMode = 0;
-        prop.valueA = sharpnessValue;
-        error = cam.SetProperty(&prop, false);
-        if ( error != PGRERROR_OK ) {
-            PrintError( error );
-        } else {
-        }
+    if (sharpnessOnOff == 0) { // MANUAL mode
+        setParamValue(SHARPNESS, sharpnessValue);
     }
 }
 // SHARPNESS -end-----------------------------
@@ -459,25 +440,8 @@ void on_slider_shutterOnOff(int, void*) {
 }
 
 void on_slider_shutterValue(int, void*) {
-    if (shutterOnOff == 1) { // AUTO mode
-    } else {
-        FlyCapture2::Error error;
-        Property prop;
-        prop.type = SHUTTER;
-        error = cam.GetProperty(&prop);
-        if ( error != PGRERROR_OK) {
-            PrintError( error );
-        }
-
-        prop.absControl = false;
-        prop.onOff = true;
-        prop.autoManualMode = 0;
-        prop.valueA = shutterValue;
-        error = cam.SetProperty(&prop, false);
-        if ( error != PGRERROR_OK ) { 
-            PrintError( error );
-        } else {
-        }
+    if (shutterOnOff == 1) { // MANUAL mode
+        setParamValue(SHUTTER, shutterValue);
     }   
 }
 // SHUTTER -end-------------------------------
