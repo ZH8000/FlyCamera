@@ -65,8 +65,8 @@ void on_slider_binaryMax(int, void*);
 void on_slider_binaryThresh(int, void*);
 void on_slider_successMatches(int, void*);   // success Matches value
 
-Mat sample;
-Mat target;
+Mat sampleImage;
+Mat targetImage;
 
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
@@ -120,10 +120,15 @@ int main(int argc, char** argv)
 
 void Match() {
    
-    Mat img1 = imread("sample.png", IMREAD_GRAYSCALE);
-    Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
+    // Mat img1 = imread("sample.png", IMREAD_GRAYSCALE);
+    // Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
     // Mat img1 = imread("../16v1500uF/0.png", IMREAD_GRAYSCALE);
     // Mat img2 = imread("../400v68uF/3.png", IMREAD_GRAYSCALE);
+    Mat img1;
+    Mat img2;
+    sampleImage.copyTo(img1);
+    targetImage.copyTo(img2);
+
 #if 0
  int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
     GaussianBlur(imag1, img1, Size(3, 3), sigma);
@@ -303,11 +308,12 @@ int RunSingleCamera( PGRGuid guid ) {
         if (c == 's') {
             if (!sampled) {
                 imwrite("sample.png", image);
+                image.copyTo(sampleImage);
                 sampled = true;
                 cout << "-----Get Sampled Image-----" << endl;
             } else {
-                
                 imwrite("target.png", image);
+                image.copyTo(targetImage);
 
                 // print start time
                 time_t t_s = time(0);
