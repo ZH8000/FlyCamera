@@ -1,12 +1,16 @@
 #include <FlyCapture2.h>
 
+#include <ctime>
+#include <vector>
+#include <iostream>
+
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
-#include <ctime>
-#include <vector>
-#include <iostream>
+
+#include <tesseract/baseapi.h>
+#include <tesseract/strngs.h>
 
 using namespace std;
 using namespace cv;
@@ -34,8 +38,11 @@ int oldBinaryThresh = 30;
 // int blurValue = 0;
 // int oldBlurValue = 0;
 int successMatches = 100;      // AKAZE matches
+int ocrOnOff = 0;              // OCR
 
 Camera cam;
+Mat sampleImage;
+Mat targetImage;
 static const unsigned int sk_numProps = 18;
 bool sampled = false;
 
@@ -51,6 +58,7 @@ const char* bina_thresh = "影像二元化閥值";            // binarization th
 const char* blur_title = "高斯模糊 Off/On";
 const char* blur_value = "高斯模糊 Kernel 大小";
 const char* succ_matches = "辦別成功最低Match值";
+const char* tess_title = "單張文字辨識 trigger";
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -60,9 +68,8 @@ void on_slider_shutterOnOff(int, void*);   // shutter
 void on_slider_shutterValue(int, void*);
 void on_slider_binaryMax(int, void*);      // binarization
 void on_slider_binaryThresh(int, void*);
-
-Mat sampleImage;
-Mat targetImage;
+void on_slider_ocrOnOff(int, void*);       // OCR
+void OCR(Mat*);
 
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
@@ -87,7 +94,8 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    namedWindow(win_title, WINDOW_NORMAL);
+    namedWindow(win_title, WINDOW_AUTOSIZE);
+    //resizeWindow(win_title, 1024, 768);
     namedWindow(win_setting, WINDOW_NORMAL);
     namedWindow(win_opencv, WINDOW_NORMAL);
 
@@ -101,6 +109,7 @@ int main(int argc, char** argv)
     createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
     createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
+    createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -263,8 +272,6 @@ int RunSingleCamera( PGRGuid guid ) {
         return -1;
     }
 
-//    getCameraProp(&cam);
-
     // Start capturing images
     error = cam.StartCapture();
     if (error != PGRERROR_OK) {
@@ -276,9 +283,15 @@ int RunSingleCamera( PGRGuid guid ) {
     Image rgbImage;
     char c;   
     while (true) {
-        c = waitKey(30);
-
+        // Retrieve an image
+        error = cam.RetrieveBuffer( &rawImage );
+        if (error != PGRERROR_OK) {
+            PrintError( error );
+            continue;
+        }
         getCameraProp(&cam);
+
+        c = waitKey(30);
         if (c == 'q') {
             return 0;
         }
@@ -287,19 +300,16 @@ int RunSingleCamera( PGRGuid guid ) {
             cout << "-------Reset Sampling-------" << endl;
         }
 
-        // Retrieve an image
-        error = cam.RetrieveBuffer( &rawImage );
-        if (error != PGRERROR_OK) {
-            PrintError( error );
-            continue;
-        }
-
         // Convert to RGB
         rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
 
         // convert to OpenCV Mat
         unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
+
+        // resize to smaller size
+        Size size = Size(800, 600);
+        resize(image, image, size);
 
         if (binaryOnOff == 1) {
             // threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
@@ -350,6 +360,10 @@ int RunSingleCamera( PGRGuid guid ) {
                 // Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
                 // imshow("AKAZE 比對結果", res);
             }
+        }
+
+        if (ocrOnOff == 1) {
+            OCR(&image);
         }
 
 //        Mat binaryImage;
@@ -463,3 +477,43 @@ void on_slider_binaryThresh(int, void*) {
     }
 }
 // BINARIZATION -end--------------------------
+// OCR -start---------------------------------
+void OCR(Mat *image) {
+    Mat newImage;
+    RNG rng(12345);
+    //Mat tmp = imread("../Lenna.png");;
+    Mat tmp;
+    image->copyTo(tmp);   
+    cvtColor(tmp, tmp, CV_BGR2GRAY);
+    tmp.convertTo(tmp, CV_8UC1);
+
+    vector< vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    findContours(tmp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    //findContours(tmp, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+
+    Mat drawing = Mat::zeros(image->size(), CV_8UC3);
+    for (int x = 0; x < contours.size(); x++) {
+        Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+        drawContours( drawing, contours, x, color, 2, 8, hierarchy, 0, Point() );
+    }
+    namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
+    imshow( "Contours", drawing );
+
+    namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
+    imshow( "Contours", tmp );
+
+    tesseract::TessBaseAPI tess;
+    tess.Init(NULL, "eng", tesseract::OEM_DEFAULT);
+    tess.SetPageSegMode(tesseract::PSM_SINGLE_BLOCK);
+
+    tess.SetImage((uchar*)image->data, image->cols, image->rows, 1, image->cols);
+    char* out = tess.GetUTF8Text();
+
+    ocrOnOff = 0;
+    setTrackbarPos(tess_title, win_opencv, ocrOnOff);
+
+    cout << out << endl;
+    cout << "-----------------------------" << endl;
+}
+// OCR -end-----------------------------------
