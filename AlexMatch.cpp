@@ -5,8 +5,9 @@
 #include <iostream>
 
 #include <opencv2/features2d/features2d.hpp>
-#include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
 #include <tesseract/baseapi.h>
@@ -30,6 +31,7 @@ int sharpnessValue = 3000;
 int shutterOnOff = 0;          // shutter
 int shutterValue = 0;
 int binaryOnOff = 0;           // binarization
+int binaryInvOnOff = 0;        // binarization inverse
 int binaryMax =  100;          // binarization max value will between 0(+150) ~ 150(+150), p.s. actually value should plus 150, so 150~300
 int oldBinaryMax = 100;
 int binaryThresh = 30;
@@ -52,7 +54,8 @@ const char* shar_title = "自動影像銳利化 Off/On";
 const char* shar_value = "手動影像銳利化值";
 const char* shut_title = "自動快門 Off/On";
 const char* shut_value = "手動快門值";
-const char* bina_title = "影像二元化 Off/ On";
+const char* bina_title = "影像二元化 Off/On";
+const char* binv_title = "影像二元化反轉 Off/On";
 const char* bina_max = "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
 const char* bina_thresh = "影像二元化閥值";            // binarization thresh will between 0 ~ 150
 const char* blur_title = "高斯模糊 Off/On";
@@ -106,6 +109,7 @@ int main(int argc, char** argv)
     createTrackbar(shut_title, win_setting, &shutterOnOff, 1, on_slider_shutterOnOff);
     createTrackbar(shut_value, win_setting, &shutterValue, 1590, on_slider_shutterValue);
     createTrackbar(bina_title, win_opencv, &binaryOnOff, 1);
+    createTrackbar(binv_title, win_opencv, &binaryInvOnOff, 1);
     createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
     createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
@@ -202,11 +206,11 @@ void Match() {
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
     cout << "Alex Matching Results" << endl;
     cout << "*******************************" << endl;
-    cout << "# Keypoints 1:                        \t" << kpts1.size() << endl;
-    cout << "# Keypoints 2:                        \t" << kpts2.size() << endl;
-    cout << "# Matches:                            \t" << matched1.size() << endl;
-    cout << "# Inliers:                            \t" << inliers1.size() << endl;
-    cout << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
+    cout << "# Keypoints 1:    \t" << kpts1.size() << endl;
+    cout << "# Keypoints 2:    \t" << kpts2.size() << endl;
+    cout << "# Matches:        \t" << matched1.size() << endl;
+    cout << "# Inliers:        \t" << inliers1.size() << endl;
+    cout << "# Inliers Ratio:  \t" << inlier_ratio << endl;
     cout << endl;
 }
 
@@ -295,10 +299,6 @@ int RunSingleCamera( PGRGuid guid ) {
         if (c == 'q') {
             return 0;
         }
-        if (c == 'r') {
-            sampled = false;
-            cout << "-------Reset Sampling-------" << endl;
-        }
 
         // Convert to RGB
         rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
@@ -312,63 +312,14 @@ int RunSingleCamera( PGRGuid guid ) {
         resize(image, image, size);
 
         if (binaryOnOff == 1) {
-            // threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
-            threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
-        }
-
-        // handle mouse click event
-        /*
-        if (ldown == true && lup == false) {
-            Point pt;
-            pt.x = x;
-            pt.y = y;
-        }*/
-
-        imshow(win_title, image);
-
-        if (c == 's') {
-            if (!sampled) {
-                // imwrite("sample.png", image);
-                image.copyTo(sampleImage);
-                sampled = true;
-                cout << "-----Get Sampled Image-----" << endl;
+            if(binaryInvOnOff == 1) {
+                threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
             } else {
-                // imwrite("target.png", image);
-                image.copyTo(targetImage);
-
-                // print start time
-                time_t t_s = time(0);
-                struct tm * now = localtime( &t_s );
-                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
-
-                clock_t start, end;
-                double duration;
-                start = clock();
-
-                Match();
-
-                end = clock();
-                duration = (double)(end - start) / CLOCKS_PER_SEC;
-                cout << "Duration: "  << duration << endl;
-
-                // print end time
-                time_t t_e = time(0);
-                struct tm * now_e = localtime( &t_e );
-                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
-
-                // namedWindow("AKAZE 比對結果", WINDOW_NORMAL);
-                // Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
-                // imshow("AKAZE 比對結果", res);
+                threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
             }
         }
 
-        if (ocrOnOff == 1) {
-            OCR(&image);
-        }
-
-//        Mat binaryImage;
-//        threshold(image, binaryImage, 30., 255., CV_THRESH_BINARY);
-//        imshow("bw image", binaryImage);
+        imshow(win_title, image);
     }            
 
     // Stop capturing images
@@ -454,7 +405,7 @@ void on_slider_shutterOnOff(int, void*) {
 }
 
 void on_slider_shutterValue(int, void*) {
-    if (shutterOnOff == 1) { // MANUAL mode
+    if (shutterOnOff == 0) { // MANUAL mode
         setParamValue(SHUTTER, shutterValue);
     }   
 }
@@ -488,20 +439,38 @@ void OCR(Mat *image) {
     tmp.convertTo(tmp, CV_8UC1);
 
     vector< vector<Point> > contours;
+    vector< vector<Point> > contoursLow;
     vector<Vec4i> hierarchy;
-    findContours(tmp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-    //findContours(tmp, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    findContours(tmp, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    // findContours(tmp, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    // approxPolyDP(contours, contoursLow, 1, true);
+    for(int x = 0; x < contours.size(); x++) {
+        approxPolyDP(contours[x], contours[x], 1, true);
+    }
+   
+    Moments moments;
+    double humoments[7];
 
     Mat drawing = Mat::zeros(image->size(), CV_8UC3);
     for (int x = 0; x < contours.size(); x++) {
         Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
         drawContours( drawing, contours, x, color, 2, 8, hierarchy, 0, Point() );
+        Rect rect;
+        Point pt1, pt2;
+
+        rect = boundingRect(contours[x]);
+        pt1.x = rect.x;
+        pt2.x = (rect.x + rect.width);
+        pt1.y = rect.y;
+        pt2.y = (rect.y + rect.height);
+        rectangle(drawing, pt1, pt2, color, 1, 8, 0);
+
+        //moments = moments(contours[x]);
+        //HuMoments(moments, humoments);
     }
     namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
     imshow( "Contours", drawing );
 
-    namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
-    imshow( "Contours", tmp );
 
     tesseract::TessBaseAPI tess;
     tess.Init(NULL, "eng", tesseract::OEM_DEFAULT);
