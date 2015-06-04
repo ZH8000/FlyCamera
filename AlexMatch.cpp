@@ -300,6 +300,11 @@ int RunSingleCamera( PGRGuid guid ) {
             return 0;
         }
 
+        if (c == 'r') {
+             sampled = false;
+             cout << "-------Reset Sampling-------" << endl;
+         }
+
         // Convert to RGB
         rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
 
@@ -319,15 +324,50 @@ int RunSingleCamera( PGRGuid guid ) {
             }
         }
 
+        if (c == 's') {
+            if (!sampled) {
+                // imwrite("sample.png", image);
+                image.copyTo(sampleImage);
+                sampled = true;
+                cout << "-----Get Sampled Image-----" << endl;
+            } else {
+                image.copyTo(targetImage);
+
+                // print start time
+                time_t t_s = time(0);
+                struct tm * now = localtime( &t_s );
+                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
+
+                clock_t start, end;
+                double duration;
+                start = clock();
+
+                Match();
+
+                end = clock();
+                duration = (double)(end - start) / CLOCKS_PER_SEC;
+                cout << "Duration: "  << duration << endl;
+
+                // print end time
+                time_t t_e = time(0);
+                struct tm * now_e = localtime( &t_e );
+                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
+
+                // namedWindow("AKAZE 比對結果", WINDOW_NORMAL);
+                // Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
+                // imshow("AKAZE 比對結果", res);
+            }
+        }
+
         imshow(win_title, image);
-    }            
+    }
 
     // Stop capturing images
     error = cam.StopCapture();
     if (error != PGRERROR_OK) {
         PrintError( error );
         return -1;
-    }      
+    }
 
     // Disconnect the camera
     error = cam.Disconnect();
