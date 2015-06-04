@@ -31,9 +31,11 @@ const char* bina_title =  "影像二元化 Off/On";
 const char* binv_title =  "影像二元化反轉 Off/On";
 const char* bina_max=     "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
 const char* bina_thresh = "影像二元化閥值";               // binarization thresh will between 0 ~ 150
-const char* cann_title = "Canny 測邊 Off/On";
+const char* cann_title =  "Canny 測邊 Off/On";
 const char* cann_max   =  "Canny 測邊最大接受閥值(+150)";
 const char* cann_thresh = "Canny 測邊閥值";
+const char* line_title =  "線偵測";
+const char* circ_title =  "圈偵測";
 
 int exposureOnOff = 0;         // exposure
 int exposureValue = 0;
@@ -52,6 +54,8 @@ int cannyMax = 50;             // canny max value will between 0(150+) ~ 100(+15
 int oldCannyMax = 50;
 int cannyThresh = 50;
 int oldCannyThresh = 50;
+int lineOnOff = 0;
+int circleOnOff = 0;
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -101,7 +105,9 @@ int main(int argc, char** argv)
     createTrackbar(bina_thresh,win_opencv,  &binaryThresh,   150,  on_slider_binaryThresh);
     createTrackbar(cann_title, win_opencv,  &cannyOnOff,     1);
     createTrackbar(cann_max,   win_opencv,  &cannyMax,       150,  on_slider_cannyMax);
-    createTrackbar(cann_thresh,win_opencv,  &cannyThresh,     200,  on_slider_cannyThresh);
+    createTrackbar(cann_thresh,win_opencv,  &cannyThresh,     200, on_slider_cannyThresh);
+    createTrackbar(line_title, win_opencv,  &lineOnOff,      1);
+    createTrackbar(circ_title, win_opencv,  &circleOnOff,    1);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -226,8 +232,10 @@ int RunSingleCamera( PGRGuid guid ) {
             Mat tmp;
             image.copyTo(tmp);
             Canny(tmp, image, cannyThresh, (cannyMax+150), 3);
+        }
 
-
+        // Hough Line --------
+        if (lineOnOff == 1) {
             Mat cdst;
             image.copyTo(cdst);
             //cvtColor(image, cdst, CV_GRAY2BGR);
@@ -244,7 +252,7 @@ int RunSingleCamera( PGRGuid guid ) {
                 pt1.y = cvRound( y0 + 1000*(a) );
                 pt2.x = cvRound( x0 - 1000*(-b) );
                 pt2.y = cvRound( y0 - 1000*(a) );
-                line( cdst, pt1, pt2, Scalar(0,0,255), 3, CV_AA);
+                line( cdst, pt1, pt2, Scalar(255,0,255), 3, CV_AA);
             }
 # else 
             vector<Vec4i> lines;
@@ -258,7 +266,25 @@ int RunSingleCamera( PGRGuid guid ) {
         } else {
             destroyWindow("detected lines");
         }
+        // Hough Circle --------
+        if (circleOnOff == 1) {
+            vector<Vec3f> circles;
+            Mat dest;
+            image.copyTo(dest);
+            HoughCircles( dest, circles, CV_HOUGH_GRADIENT, 1, dest.rows/8, 200, 100, 0, 0 );
 
+            for( size_t i = 0; i < circles.size(); i++ ) {
+                Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+                int radius = cvRound(circles[i][2]);
+                // circle center
+                circle( dest, center, 3, Scalar(255,255,255), -1, 8, 0 );
+                // circle outline
+                circle( dest, center, radius, Scalar(255,255,255), 3, 8, 0 );
+            }
+            imshow("detected circles", dest);
+        } else {
+            destroyWindow("detected circles");
+        }
         imshow(win_title, image);
     }            
 
