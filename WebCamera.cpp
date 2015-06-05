@@ -12,6 +12,11 @@
 #include <tesseract/baseapi.h>
 #include <tesseract/strngs.h>
 
+#include "webcam.h"
+
+#define XRES 640
+#define YRES 480
+
 using namespace cv;
 using namespace std;
 
@@ -55,19 +60,39 @@ void OCR();
 
 static void mouse_callback(int event, int x, int y, int, void *);
 
-VideoCapture cap(0);
+// VideoCapture cap(0);
+unsigned char bigbuffer[(2560*1920*3)];
 
 int main() {
 
     cout << "Press 'q' to quit" << endl;
     cout << "Press 's' to take a picture" << endl;
 
+    Webcam webcam("/dev/video0", XRES, YRES);
+
+    namedWindow("test", WINDOW_NORMAL);
+    while(1>0) { 
+        auto frame = webcam.frame();
+
+        Mat display(YRES, XRES, CV_8UC3, bigbuffer);
+        int i, newi, newsize=0;
+
+        for(i=0, newi=0; i<frame.size; i=i+4, newi=newi+2) {
+            // Y1=first byte and Y2=third byte
+            bigbuffer[newi]=frame.data[i];
+            bigbuffer[newi+1]=frame.data[i+2];
+            cout << i << " " << newi << endl;
+        }
+        imshow("test", display);
+    }
+
+    /*
     if (!cap.isOpened()) {
         cout << "Capture could not be opened successfully" << endl;
         return -1; 
-    }
+    }*/
 
-    getCapParams();
+    // getCapParams();
 
     namedWindow(win_title, WINDOW_NORMAL);
     namedWindow(win_setting, WINDOW_NORMAL);
@@ -85,6 +110,7 @@ int main() {
 
     setMouseCallback(win_title, mouse_callback);
 
+    /*
     while (char(waitKey(1)) != 'q' && cap.isOpened()) {
         calibrateParams();
 
@@ -99,7 +125,7 @@ int main() {
         }
 
         imshow(win_title, frame);
-    }
+    }*/
 
     return 0;
 }
@@ -130,6 +156,7 @@ static void mouse_callback(int event, int x, int y, int, void *) {
     }
 }
 // GET CAP PARAMS -start----------------------
+/*
 void getCapParams() {
     brightnessValue = cap.get(CV_CAP_PROP_BRIGHTNESS) * 100;
     cout << "brightness:" << brightnessValue << endl;
@@ -141,9 +168,11 @@ void getCapParams() {
     //sharpnessValue = cap.get(CV_CAP_PROP_SHARPNESS) * 100;
     //cout << "sharpness:" << sharpnessValue << endl;
 }
+*/
 // GET CAP PARAMS -end------------------------
 
 // CALIBRATE PARAMS -start--------------------
+/*
 void calibrateParams() {
     //cap.set(CV_CAP_PROP_BRIGHTNESS, float(brightnessValue/100));
     cout << "brightness 2: " << float(brightnessValue/100) << endl;
@@ -153,6 +182,7 @@ void calibrateParams() {
     cout << "saturation 2: " << float(saturationValue/100) << endl;
     getCapParams();
 }
+*/
 // CALIBRATE PARAMS -end----------------------
 
 // BINARIZATION -start------------------------
