@@ -124,8 +124,16 @@ int main() {
             threshold(frame, frame, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
         }
 
+        Mat tmp;
+        Canny(frame, tmp, 50, 200, 3);
+
         imshow(win_title, frame);
+<<<<<<< Updated upstream
     }*/
+=======
+        imshow("test", tmp);
+    }
+>>>>>>> Stashed changes
 
     return 0;
 }
