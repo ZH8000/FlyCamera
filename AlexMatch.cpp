@@ -81,6 +81,83 @@ void PrintError( FlyCapture2::Error error ) {
 void getCameraProp(Camera*);
 int RunSingleCamera( PGRGuid guid );
 
+class Akaze_match : public ParallelLoopBody {
+    private:
+        Mat sampleImage;
+        Mat targetImage;
+        Mat& res;
+
+    public:
+        Akaze_match(Mat sample, Mat target, Mat& output) :
+                   sampleImage(sample), targetImage(target), res(output) {}
+
+        virtual void operator() (const Range& range) const {
+            Mat homography;
+            FileStorage fs("../H1to3p.xml", FileStorage::READ);
+            fs.getFirstTopLevelNode() >> homography;
+
+            vector<KeyPoint> kpts1, kpts2;
+            Mat desc1, desc2;
+
+            Ptr<AKAZE> akaze = AKAZE::create();
+            akaze->detectAndCompute(sampleImage, noArray(), kpts1, desc1);
+            akaze->detectAndCompute(targetImage, noArray(), kpts2, desc2);
+
+            BFMatcher matcher(NORM_HAMMING);
+            vector< vector<DMatch> > nn_matches;
+            matcher.knnMatch(desc1, desc2, nn_matches, 2);
+
+            vector<KeyPoint> matched1, matched2, inliers1, inliers2;
+            vector<DMatch> good_matches;
+            for(size_t i = 0; i < nn_matches.size(); i++) {
+                DMatch first = nn_matches[i][0];
+                float dist1 = nn_matches[i][0].distance;
+                float dist2 = nn_matches[i][1].distance;
+
+                if(dist1 < nn_match_ratio * dist2) {
+                    matched1.push_back(kpts1[first.queryIdx]);
+                    matched2.push_back(kpts2[first.trainIdx]);
+                }
+            }
+
+            for(unsigned i = 0; i < matched1.size(); i++) {
+                Mat col = Mat::ones(3, 1, CV_64F);
+                col.at<double>(0) = matched1[i].pt.x;
+                col.at<double>(1) = matched1[i].pt.y;
+
+                col = homography * col;
+                col /= col.at<double>(2);
+                double dist = sqrt( pow(col.at<double>(0) - matched2[i].pt.x, 2) +
+                              pow(col.at<double>(1) - matched2[i].pt.y, 2));
+
+                if(dist < inlier_threshold) {
+                    int new_i = static_cast<int>(inliers1.size());
+                    inliers1.push_back(matched1[i]);
+                    inliers2.push_back(matched2[i]);
+                    good_matches.push_back(DMatch(new_i, new_i, 0));
+                }
+            }
+
+            drawMatches(sampleImage, inliers1, targetImage, inliers2, good_matches, res);
+            Point pt = Point(100, 100);
+            if (matched1.size() >= successMatches) {
+                putText(res, "Succeed!", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+            } else {
+                putText(res, "Failed", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+            }
+
+            double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
+            cout << "Alex Matching Results" << endl;
+            cout << "*******************************" << endl;
+            cout << "# Keypoints 1:    \t" << kpts1.size() << endl;
+            cout << "# Keypoints 2:    \t" << kpts2.size() << endl;
+            cout << "# Matches:        \t" << matched1.size() << endl;
+            cout << "# Inliers:        \t" << inliers1.size() << endl;
+            cout << "# Inliers Ratio:  \t" << inlier_ratio << endl;
+            cout << endl;
+        }
+};
+
 int main(int argc, char** argv)
 {
     cout << "Press 'q' to quit" << endl;
@@ -136,7 +213,7 @@ void Match() {
     // Mat img2 = imread("../400v68uF/3.png", IMREAD_GRAYSCALE);
     // sampleImage = imread("../16v1500uF/0.png", IMREAD_GRAYSCALE);
     // targetImage = imread("../400v68uF/3.png", IMREAD_GRAYSCALE);
-
+/*
 #if 0
  int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
     GaussianBlur(imag1, img1, Size(3, 3), sigma);
@@ -200,9 +277,12 @@ void Match() {
         putText(res, "Failed", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
     }
     //imwrite("res.png", res);
+*/
+    Mat res;
+    cv::parallel_for_(cv::Range(0, 8), Akaze_match(sampleImage, targetImage, res)); 
     namedWindow(win_akaze, WINDOW_NORMAL);
     imshow(win_akaze, res);
-
+/*
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
     cout << "Alex Matching Results" << endl;
     cout << "*******************************" << endl;
@@ -212,6 +292,7 @@ void Match() {
     cout << "# Inliers:        \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:  \t" << inlier_ratio << endl;
     cout << endl;
+*/
 }
 
 void getCameraProp(Camera* cam) {
