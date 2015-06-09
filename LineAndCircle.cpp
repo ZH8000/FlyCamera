@@ -75,8 +75,25 @@ void PrintError( FlyCapture2::Error error ) {
 void getCameraProp(Camera*);
 int RunSingleCamera( PGRGuid guid );
 
-int main(int argc, char** argv)
-{
+class Find_circles : public cv::ParallelLoopBody {
+    private:
+        cv::Mat inImage;
+        cv::Mat& outImage;
+        vector<Vec3f>& circles;
+
+    public:
+        Find_circles(cv::Mat input, cv::Mat& output, vector<Vec3f>& array) :
+                     inImage(input), outImage(output), circles(array) {}
+
+        virtual void operator() (const cv::Range& range) const {
+            inImage.copyTo(outImage);
+            for (int x = range.start; x < range.end; x++ ) {
+                HoughCircles(outImage, circles, CV_HOUGH_GRADIENT, 1, outImage.rows/8, 200, 100, 0, 0 );
+            }
+        }
+};
+
+int main(int argc, char** argv) {
     cout << "Press 'q' to quit" << endl;
 
     FlyCapture2::Error error;
@@ -216,7 +233,8 @@ int RunSingleCamera( PGRGuid guid ) {
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
 
         // resize to smaller size
-        Size size = Size(800, 600);
+        //Size size = Size(800, 600);
+        Size size = Size(640, 480);
         resize(image, image, size);
 
         if (binaryOnOff == 1) {
@@ -270,8 +288,9 @@ int RunSingleCamera( PGRGuid guid ) {
         if (circleOnOff == 1) {
             vector<Vec3f> circles;
             Mat dest;
-            image.copyTo(dest);
-            HoughCircles( dest, circles, CV_HOUGH_GRADIENT, 1, dest.rows/8, 200, 100, 0, 0 );
+            //image.copyTo(dest);
+            //HoughCircles( dest, circles, CV_HOUGH_GRADIENT, 1, dest.rows/8, 200, 100, 0, 0 );
+            cv::parallel_for_(cv::Range(0, 8), Find_circles(image, dest, circles));
 
             for( size_t i = 0; i < circles.size(); i++ ) {
                 Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
@@ -399,6 +418,8 @@ void on_slider_binaryThresh(int, void*) {
 void on_slider_cannyMax(int, void*) {
     if (cannyOnOff == 0) {
         setTrackbarPos(cann_max, win_opencv, oldCannyMax);
+        setTrackbarPos(line_title, win_opencv, 0);
+        setTrackbarPos(circ_title, win_opencv, 0);
     } else {
         oldCannyMax = cannyMax;
     }
