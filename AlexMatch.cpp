@@ -3,6 +3,7 @@
 #include <ctime>
 #include <vector>
 #include <iostream>
+#include <list>
 
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -44,6 +45,8 @@ int ocrOnOff = 0;              // OCR
 
 Camera cam;
 Mat sampleImage;
+list<Mat> sampleImages;
+const int sampleImagesSize = 10;
 Mat targetImage;
 static const unsigned int sk_numProps = 18;
 bool sampled = false;
@@ -128,7 +131,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Match() {
+void Match(Mat sample) {
    
     // Mat img1 = imread("sample.png", IMREAD_GRAYSCALE);
     // Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
@@ -153,7 +156,8 @@ void Match() {
     Mat desc1, desc2;
 
     Ptr<AKAZE> akaze = AKAZE::create();
-    akaze->detectAndCompute(sampleImage, noArray(), kpts1, desc1);
+    //akaze->detectAndCompute(sampleImage, noArray(), kpts1, desc1);
+    akaze->detectAndCompute(sample, noArray(), kpts1, desc1);
     akaze->detectAndCompute(targetImage, noArray(), kpts2, desc2);
 
     BFMatcher matcher(NORM_HAMMING);
@@ -192,7 +196,8 @@ void Match() {
     }
 
     Mat res;
-    drawMatches(sampleImage, inliers1, targetImage, inliers2, good_matches, res);
+    //drawMatches(sampleImage, inliers1, targetImage, inliers2, good_matches, res);
+    drawMatches(sample, inliers1, targetImage, inliers2, good_matches, res);
     Point pt = Point(100, 100);
     if (matched1.size() >= successMatches) {
         putText(res, "Succeed!", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
@@ -313,7 +318,7 @@ int RunSingleCamera( PGRGuid guid ) {
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
 
         // resize to smaller size
-        Size size = Size(800, 600);
+        Size size = Size(320, 240);
         resize(image, image, size);
 
         if (binaryOnOff == 1) {
@@ -325,10 +330,10 @@ int RunSingleCamera( PGRGuid guid ) {
         }
 
         if (c == 's') {
-            if (!sampled) {
-                // imwrite("sample.png", image);
+            if (sampleImages.size() < sampleImagesSize) {
+                sampleImages.push_back(image);
                 image.copyTo(sampleImage);
-                sampled = true;
+                //sampled = true;
                 cout << "-----Get Sampled Image-----" << endl;
             } else {
                 image.copyTo(targetImage);
@@ -342,7 +347,10 @@ int RunSingleCamera( PGRGuid guid ) {
                 double duration;
                 start = clock();
 
-                Match();
+                list<Mat>::iterator i;
+                for (i = sampleImages.begin(); i != sampleImages.end(); ++i) {
+                    Match(*i);
+                }
 
                 end = clock();
                 duration = (double)(end - start) / CLOCKS_PER_SEC;
