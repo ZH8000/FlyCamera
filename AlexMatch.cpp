@@ -4,6 +4,8 @@
 #include <vector>
 #include <iostream>
 #include <list>
+#include <sstream>
+#include <string>
 
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -47,9 +49,9 @@ Camera cam;
 Mat sampleImage;
 list<Mat> sampleImages;
 const int sampleImagesSize = 10;
+int sampleImagesFlag = 0;
 Mat targetImage;
 static const unsigned int sk_numProps = 18;
-bool sampled = false;
 
 const char* expo_title = "自動曝光 Off/On";
 const char* expo_value = "手動曝光值";
@@ -131,7 +133,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Match(Mat sample) {
+void Match(Mat& sample, int idx) {
    
     // Mat img1 = imread("sample.png", IMREAD_GRAYSCALE);
     // Mat img2 = imread("target.png", IMREAD_GRAYSCALE);
@@ -205,8 +207,12 @@ void Match(Mat sample) {
         putText(res, "Failed", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
     }
     //imwrite("res.png", res);
-    namedWindow(win_akaze, WINDOW_NORMAL);
-    imshow(win_akaze, res);
+    //namedWindow(win_akaze, WINDOW_NORMAL);
+    //imshow(win_akaze, res);
+    stringstream ss;
+    ss << idx;
+    namedWindow(ss.str(), WINDOW_NORMAL);
+    imshow(ss.str(), res);
 
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
     cout << "Alex Matching Results" << endl;
@@ -306,7 +312,8 @@ int RunSingleCamera( PGRGuid guid ) {
         }
 
         if (c == 'r') {
-             sampled = false;
+             sampleImages.clear();
+             sampleImagesFlag = 0;
              cout << "-------Reset Sampling-------" << endl;
          }
 
@@ -333,8 +340,7 @@ int RunSingleCamera( PGRGuid guid ) {
             if (sampleImages.size() < sampleImagesSize) {
                 sampleImages.push_back(image);
                 image.copyTo(sampleImage);
-                //sampled = true;
-                cout << "-----Get Sampled Image-----" << endl;
+                cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
             } else {
                 image.copyTo(targetImage);
 
@@ -349,7 +355,8 @@ int RunSingleCamera( PGRGuid guid ) {
 
                 list<Mat>::iterator i;
                 for (i = sampleImages.begin(); i != sampleImages.end(); ++i) {
-                    Match(*i);
+                    int idx =  distance(sampleImages.begin(), i);
+                    Match(*i, idx);
                 }
 
                 end = clock();
