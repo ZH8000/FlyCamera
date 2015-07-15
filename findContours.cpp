@@ -40,6 +40,19 @@ void thresh_callback(int, void*) {
     Canny(src_gray, canny_output, thresh, thresh*2, 3);
     findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0,0));
 
+    // get the moments
+    vector<Moments> mu( contours.size() );
+    for (int x=0; x<contours.size(); x++) {
+        mu[x] = moments( contours[x], false );
+    }
+
+    // get the mass centers
+    vector<Point2f> mc( contours.size() );
+    for (int x=0; x<contours.size(); x++) {
+        mc[x] = Point2f(mu[x].m10/mu[x].m00, mu[x].m01/mu[x].m00);
+    }
+
+    // draw contours
     Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
     for (int x=0; x<contours.size(); x++) {
         Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
@@ -47,4 +60,13 @@ void thresh_callback(int, void*) {
     }
     namedWindow("Contours", CV_WINDOW_AUTOSIZE);
     imshow("Contours", drawing);
+
+    // calculate the area with the moments 00 and compare with the result of the OpenCV function
+    printf("\t Info: Area and Contour Length \n");
+    for (int x=0; x<contours.size(); x++) {
+        printf(" * Contour[%d] - Area (M_00) = %.2f - Area OpenCV: %.2f - Length: %.2f \n", x, mu[x].m00, contourArea(contours[x]), arcLength( contours[x], true ) );
+        Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+        drawContours(drawing, contours, x, color, 2, 8, hierarchy, 0, Point());
+        circle(drawing, mc[x], 4, color, -1, 8, 0);
+    }
 }
