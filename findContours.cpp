@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     src = imread(argv[1], 1);
 
     cvtColor(src, src_gray, CV_BGR2GRAY);
-    blur(src_gray, src_gray, Size(3,3));
+    blur(src_gray, src_gray, Size(1, 1));
 
     char* source_window = "Source";
     namedWindow(source_window, CV_WINDOW_AUTOSIZE);
@@ -39,6 +39,8 @@ void thresh_callback(int, void*) {
 
     Canny(src_gray, canny_output, thresh, thresh*2, 3);
     findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0,0));
+    namedWindow("Canny", CV_WINDOW_AUTOSIZE);
+    imshow("Canny", canny_output);
 
     // get the moments
     vector<Moments> mu( contours.size() );
@@ -56,7 +58,7 @@ void thresh_callback(int, void*) {
     Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
     for (int x=0; x<contours.size(); x++) {
         Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-        drawContours(drawing, contours, x, color, 2, 8, hierarchy, 0, Point());
+        drawContours(drawing, contours, x, color, 1, 8, hierarchy, 0, Point());
     }
     namedWindow("Contours", CV_WINDOW_AUTOSIZE);
     imshow("Contours", drawing);
@@ -65,8 +67,8 @@ void thresh_callback(int, void*) {
     printf("\t Info: Area and Contour Length \n");
     for (int x=0; x<contours.size(); x++) {
         printf(" * Contour[%d] - Area (M_00) = %.2f - Area OpenCV: %.2f - Length: %.2f \n", x, mu[x].m00, contourArea(contours[x]), arcLength( contours[x], true ) );
-        Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-        drawContours(drawing, contours, x, color, 2, 8, hierarchy, 0, Point());
-        circle(drawing, mc[x], 4, color, -1, 8, 0);
+        //Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+        //drawContours(drawing, contours, x, color, 1, 8, hierarchy, 0, Point());
+        //circle(drawing, mc[x], 4, color, -1, 8, 0);
     }
 }
