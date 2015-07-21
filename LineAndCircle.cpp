@@ -287,10 +287,10 @@ int RunSingleCamera( PGRGuid guid ) {
         // Hough Circle --------
         if (circleOnOff == 1) {
             vector<Vec3f> circles;
-            Mat dest;
-            //image.copyTo(dest);
-            //HoughCircles( dest, circles, CV_HOUGH_GRADIENT, 1, dest.rows/8, 200, 100, 0, 0 );
-            cv::parallel_for_(cv::Range(0, 8), Find_circles(image, dest, circles));
+            Mat dest(image.size(), CV_8UC1);
+            image.copyTo(dest);
+            HoughCircles( dest, circles, CV_HOUGH_GRADIENT, 1, dest.rows/120, 60, 60, 0, 0 );
+            //cv::parallel_for_(cv::Range(0, 8), Find_circles(image, dest, circles));
 
             for( size_t i = 0; i < circles.size(); i++ ) {
                 Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
