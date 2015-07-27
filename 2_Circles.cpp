@@ -286,8 +286,21 @@ int RunSingleCamera( PGRGuid guid ) {
 
         // Hough Circle --------
         c = waitKey(30);
+        // if user press 's', start to save image and detect.
         if (c == 's') {
-            
+            vector<Vec3f> circles;
+            Mat dest(image.size(), CV_8UC1);
+            image.copyTo(dest);
+            HoughCircles( dest, circles, CV_HOUGH_GRADIENT, 1, dest.rows/circleMinDist, circleParam1, circleParam2, 0, 0 );
+            for( size_t i = 0; i < circles.size(); i++ ) {
+                Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+                int radius = cvRound(circles[i][2]);
+                // circle center
+                circle( dest, center, 3, Scalar(255,255,255), -1, 8, 0 );
+                // circle outline
+                circle( dest, center, radius, Scalar(255,255,255), 3, 8, 0 );
+            }
+            imshow("detected circles result", dest);
         }
     }            
 
