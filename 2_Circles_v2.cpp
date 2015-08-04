@@ -253,7 +253,7 @@ int RunSingleCamera( PGRGuid guid ) {
             Canny(tmp, image, cannyThresh, (cannyMax+150), 3);
         }
 
-        // Hough Circle --------
+        // Contours with circle bound --------
         if (circleOnOff == 1) {
             int thresh = 100;
             RNG rng(12345);
@@ -263,6 +263,7 @@ int RunSingleCamera( PGRGuid guid ) {
 
             Mat src_gray;
             cvtColor( image, src_gray, COLOR_BGR2GRAY );
+            blur( src_gray, src_gray, Size(3,3) );
             /// Detect edges using Threshold
             threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY );
             /// Find contours
@@ -270,6 +271,7 @@ int RunSingleCamera( PGRGuid guid ) {
 
             /// Approximate contours to polygons + get bounding rects and circles
             vector<vector<Point> > contours_poly( contours.size() );
+            cout << "contours.size() " << contours.size() << endl;
             //vector<Rect> boundRect( contours.size() );
             vector<Point2f>center( contours.size() );
             vector<float>radius( contours.size() );
@@ -284,9 +286,10 @@ int RunSingleCamera( PGRGuid guid ) {
             Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
             for( size_t i = 0; i< contours.size(); i++ ) {
                 Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-                drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+                //drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
                 //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
                 circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
+                cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
             }
 
             /// Show in a window
@@ -298,14 +301,14 @@ int RunSingleCamera( PGRGuid guid ) {
             destroyWindow("detected circles");
         }
         imshow(win_title, image);
-    }            
+    }
 
     // Stop capturing images
     error = cam.StopCapture();
     if (error != PGRERROR_OK) {
         PrintError( error );
         return -1;
-    }      
+    }
 
     // Disconnect the camera
     error = cam.Disconnect();
