@@ -81,10 +81,17 @@ void thresh_callback(int, void* )
       //drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
       //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
       circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
-      cout << "center[i]: " << center[i] << " , radius: " << (int)radius[i] << endl;
+      cout << "center[" << i << "]: " << center[i] << " , radius: " << (int)radius[i] << endl;
   }
 
   /// Show in a window
   namedWindow( "Contours", WINDOW_AUTOSIZE );
   imshow( "Contours", drawing );
+
+  double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
+  cout << "center distance: " << result << endl;
+  cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
+
+  cout << "--------------------------------" << endl;
+
 }
