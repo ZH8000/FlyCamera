@@ -211,7 +211,8 @@ int RunSingleCamera( PGRGuid guid ) {
 
     Image rawImage;
     Image rgbImage;
-    char c;   
+    char c;
+    int flag = 0;
     while (true) {
         // Retrieve an image
         error = cam.RetrieveBuffer( &rawImage );
@@ -221,7 +222,7 @@ int RunSingleCamera( PGRGuid guid ) {
         }
         getCameraProp(&cam);
 
-        c = waitKey(30);
+        c = waitKey(100);
         if (c == 'q') {
             return 0;
         }
@@ -276,7 +277,7 @@ int RunSingleCamera( PGRGuid guid ) {
             vector<Point2f>center( contours.size() );
             vector<float>radius( contours.size() );
 
-            for( size_t i = 0; i < contours.size(); i++ ) {
+            for ( size_t i = 0; i < contours.size(); i++ ) {
                 approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
                 //boundRect[i] = boundingRect( Mat(contours_poly[i]) );
                 minEnclosingCircle( contours_poly[i], center[i], radius[i] );
@@ -284,12 +285,26 @@ int RunSingleCamera( PGRGuid guid ) {
 
             /// Draw polygonal contour + bonding rects + circles
             Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
-            for( size_t i = 0; i< contours.size(); i++ ) {
+            for ( size_t i = 0; i< contours.size(); i++ ) {
                 Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
                 //drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
                 //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
                 circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
-                cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
+                //cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
+            }
+
+            trigger = waitKey(100);
+            if ( (trigger == 's') && (flag<10) ) {
+                if (contours.size() == 3) {
+                    double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
+                    cout << "center distance: " << result << endl;
+                    cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
+                    cout << "flag: " << flag << endl;
+                    flag++;
+                } else {
+                    cout << "瑕疵 或是 請調校攝影機和光線環境" << endl;
+                }
+            } else {
             }
 
             /// Show in a window
@@ -298,6 +313,7 @@ int RunSingleCamera( PGRGuid guid ) {
 
             imshow("detected circles", drawing);
         } else {
+            flag = 0;
             destroyWindow("detected circles");
         }
         imshow(win_title, image);
