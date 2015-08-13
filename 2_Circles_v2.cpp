@@ -212,7 +212,7 @@ int RunSingleCamera( PGRGuid guid ) {
     Image rawImage;
     Image rgbImage;
     char c;
-    int flag = 0;
+    int flag = -1;
     while (true) {
         // Retrieve an image
         error = cam.RetrieveBuffer( &rawImage );
@@ -255,6 +255,10 @@ int RunSingleCamera( PGRGuid guid ) {
         }
 
         // Contours with circle bound --------
+        c = waitKey(30);
+        if (c == 's') {
+            flag = 0;
+        }
         if (circleOnOff == 1) {
             int thresh = 100;
             RNG rng(12345);
@@ -293,18 +297,18 @@ int RunSingleCamera( PGRGuid guid ) {
                 //cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
             }
 
-            trigger = waitKey(100);
-            if ( (trigger == 's') && (flag<10) ) {
+            if ((flag>-1) && (flag<10) ) {
                 if (contours.size() == 3) {
                     double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
+                    cout << "flag: " << flag << endl;
                     cout << "center distance: " << result << endl;
                     cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
-                    cout << "flag: " << flag << endl;
                     flag++;
                 } else {
                     cout << "瑕疵 或是 請調校攝影機和光線環境" << endl;
                 }
             } else {
+                flag = -1;
             }
 
             /// Show in a window
@@ -313,7 +317,6 @@ int RunSingleCamera( PGRGuid guid ) {
 
             imshow("detected circles", drawing);
         } else {
-            flag = 0;
             destroyWindow("detected circles");
         }
         imshow(win_title, image);
