@@ -3,6 +3,7 @@
 #include <ctime>
 #include <vector>
 #include <iostream>
+#include <list>
 
 //#include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -20,6 +21,8 @@ const char* win_opencv = "OpenCV 設定";
 const char* win_circle = "圈偵測 設定";
 
 Camera cam;
+list<Mat> sampleImages;
+const int sampleImagesSize = 10;
 static const unsigned int sk_numProps = 18;
 
 const char* expo_title =  "自動曝光 Off/On";
