@@ -291,11 +291,14 @@ int RunSingleCamera( PGRGuid guid ) {
                 Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
                 for ( size_t i = 0; i< contours.size(); i++ ) {
                     Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-                    //drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+                    drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
                     //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
                     circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
                     cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
+                    cout << "area:   " << contourArea(contours[i]) << endl;
                 }
+
+                imshow("detected circles", drawing);
                 double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
                 cout << "center distance: " << result << endl;
                 cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
