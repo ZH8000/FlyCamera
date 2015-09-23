@@ -35,6 +35,8 @@ const char* bina_title =  "影像二元化 Off/On";
 const char* binv_title =  "影像二元化反轉 Off/On";
 const char* bina_max=     "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
 const char* bina_thresh = "影像二元化閥值";               // binarization thresh will between 0 ~ 150
+const char* cont_title1 = "contour 面積下限";
+const char* cont_title2 = "contour 面積上限";
 const char* cann_title =  "Canny 測邊 Off/On";
 const char* cann_max   =  "Canny 測邊最大接受閥值(+150)";
 const char* cann_thresh = "Canny 測邊閥值";
@@ -61,6 +63,8 @@ int circleOnOff = 0;
 int circleMinDist = 120;
 int circleParam1 = 60;
 int circleParam2 = 60;
+int contourAreaFilterLow = 0;
+int contourAreaFilterHigh = 9000;
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -117,14 +121,21 @@ int main(int argc, char** argv) {
 
     createTrackbar(expo_title, win_setting, &exposureOnOff,  1,    on_slider_exposureOnOff);
     createTrackbar(expo_value, win_setting, &exposureValue,  1023, on_slider_exposureValue);
+    
     createTrackbar(shar_title, win_setting, &sharpnessOnOff, 1,    on_slider_sharpnessOnOff);
     createTrackbar(shar_value, win_setting, &sharpnessValue, 4095, on_slider_sharpnessValue);
+    
     createTrackbar(shut_title, win_setting, &shutterOnOff,   1,    on_slider_shutterOnOff);
     createTrackbar(shut_value, win_setting, &shutterValue,   1590, on_slider_shutterValue);
+    
     createTrackbar(bina_title, win_opencv,  &binaryOnOff,    1);
     createTrackbar(binv_title, win_opencv,  &binaryInvOnOff, 1);
     createTrackbar(bina_max,   win_opencv,  &binaryMax,      150,  on_slider_binaryMax);
     createTrackbar(bina_thresh,win_opencv,  &binaryThresh,   150,  on_slider_binaryThresh);
+
+    createTrackbar(cont_title1, win_opencv, &contourAreaFilterLow, 90000);
+    createTrackbar(cont_title2, win_opencv, &contourAreaFilterHigh, 90000);
+
     createTrackbar(cann_title, win_opencv,  &cannyOnOff,     1);
     createTrackbar(cann_max,   win_opencv,  &cannyMax,       150,  on_slider_cannyMax);
     createTrackbar(cann_thresh,win_opencv,  &cannyThresh,     200, on_slider_cannyThresh);
@@ -290,12 +301,14 @@ int RunSingleCamera( PGRGuid guid ) {
                 /// Draw polygonal contour + bonding rects + circles
                 Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
                 for ( size_t i = 0; i< contours.size(); i++ ) {
-                    Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-                    drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
-                    //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
-                    circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
-                    cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
-                    cout << "area:   " << contourArea(contours[i]) << endl;
+                    if (contourArea(contours[i]) < contourAreaFilterHigh && contourArea(contours[i]) > contourAreaFilterLow) {
+                        Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+                        drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+                        //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
+                        circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
+                        cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
+                        cout << "area:   " << contourArea(contours[i]) << endl;
+                    }
                 }
 
                 imshow("detected circles", drawing);
@@ -433,17 +446,3 @@ void on_slider_cannyThresh(int, void*) {
     }
 }
 // CANNY -end---------------------------------
-
-// QUICK SORT -start--------------------------
-void quicksort(vector v, int left, int right) {
-  int x = left;
-  int y = right;
-  vector<Point> temp;
-  int pivot = arr[(left + right) / 2];
-
-  double areaX = contourArea(v[x]);
-  double areaY = contourArea(v[y]);
-  /* partition */
-  while ()
-}
-// QUICK SORT -end----------------------------
