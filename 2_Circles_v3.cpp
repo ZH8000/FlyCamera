@@ -131,15 +131,14 @@ int main(int argc, char** argv) {
     createTrackbar(bina_title, win_opencv,  &binaryOnOff,    1);
     createTrackbar(binv_title, win_opencv,  &binaryInvOnOff, 1);
     createTrackbar(bina_max,   win_opencv,  &binaryMax,      150,  on_slider_binaryMax);
-    createTrackbar(bina_thresh,win_opencv,  &binaryThresh,   150,  on_slider_binaryThresh);
+    createTrackbar(bina_thresh,win_opencv,  &binaryThresh,   200,  on_slider_binaryThresh);
 
     createTrackbar(cont_title1, win_opencv, &contourAreaFilterLow, 90000);
     createTrackbar(cont_title2, win_opencv, &contourAreaFilterHigh, 90000);
 
-    createTrackbar(cann_title, win_opencv,  &cannyOnOff,     1);
-    createTrackbar(cann_max,   win_opencv,  &cannyMax,       150,  on_slider_cannyMax);
-    createTrackbar(cann_thresh,win_opencv,  &cannyThresh,     200, on_slider_cannyThresh);
-    //createTrackbar(circ_title, win_opencv,  &circleOnOff,    1);
+    // createTrackbar(cann_title, win_opencv,  &cannyOnOff,     1);
+    // createTrackbar(cann_max,   win_opencv,  &cannyMax,       150,  on_slider_cannyMax);
+    // createTrackbar(cann_thresh,win_opencv,  &cannyThresh,     200, on_slider_cannyThresh);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -326,7 +325,9 @@ int RunSingleCamera( PGRGuid guid ) {
                 double center_distance = sqrt( pow((result_center.at(0).x-result_center.at(1).x), 2) + pow( pow((result_center.at(0).y-result_center.at(1).y), 2), 2) );
                 double radius_diff = abs(result_radius.at(0) - radius.at(1));
                 cout << center_distance << "  " << radius_diff << endl;
-                if ( center_distance > (radius_diff/2) ) {
+                double bigger_radius = result_radius.at(0);
+                if (result_radius.at(1) > result_radius.at(0)) { bigger_radius = result_radius.at(1); }
+                if ( center_distance > (radius_diff/2) || radius_diff < (bigger_radius/4) ) {
                     Point text = Point(50, 50);
                     putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
                 } else {
