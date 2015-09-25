@@ -323,16 +323,31 @@ int RunSingleCamera( PGRGuid guid ) {
                 putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
             } else {
                 double center_distance = sqrt( pow((result_center.at(0).x-result_center.at(1).x), 2) + pow( pow((result_center.at(0).y-result_center.at(1).y), 2), 2) );
-                double radius_diff = abs(result_radius.at(0) - radius.at(1));
+                double radius_diff = abs(result_radius.at(0) - result_radius.at(1));
+                cout << "radius 0: " << result_radius.at(0) << endl;
+                cout << "radius 1: " << result_radius.at(1) << endl;
+                cout << "    diff: " << radius_diff << " ? " << (result_radius.at(0) - result_radius.at(1)) << endl;
                 cout << center_distance << "  " << radius_diff << endl;
                 double bigger_radius = result_radius.at(0);
                 if (result_radius.at(1) > result_radius.at(0)) { bigger_radius = result_radius.at(1); }
+                /*
                 if ( center_distance > (radius_diff/2) || radius_diff < (bigger_radius/4) ) {
                     Point text = Point(50, 50);
                     putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
                 } else {
                     Point text = Point(50, 50);
                     putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+                }*/
+                if (center_distance < (radius_diff/2) && radius_diff > (bigger_radius/4)) {
+                    cout << "center_distance: " << center_distance << endl;
+                    cout << "(radius_diff/2): " << (radius_diff/2) << endl;
+                    cout << "radius_diff: " << radius_diff << endl;
+                    cout << "(bigger_radius/4): " << (bigger_radius/4) << endl;
+                    Point text = Point(50, 50);
+                    putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+                } else {
+                    Point text = Point(50, 50);
+                    putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
                 }
             }
 
