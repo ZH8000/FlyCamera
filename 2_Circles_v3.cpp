@@ -52,7 +52,7 @@ int binaryOnOff = 0;           // binarization
 int binaryInvOnOff = 0;        // binarization inverse
 int binaryMax =  100;          // binarization max value will between 0(+150) ~ 150(+150), p.s. actually value should plus 150, so 150~300
 int oldBinaryMax = 100;
-int binaryThresh = 60;
+int binaryThresh = 100;
 int oldBinaryThresh = 30;
 int cannyOnOff = 0;            // canny
 int cannyMax = 50;             // canny max value will between 0(150+) ~ 100(+150), p.s. actually value should plus 150, so 150 ~ 250
@@ -63,8 +63,8 @@ int circleOnOff = 0;
 int circleMinDist = 120;
 int circleParam1 = 60;
 int circleParam2 = 60;
-int contourAreaFilterLow = 0;
-int contourAreaFilterHigh = 9000;
+int contourAreaFilterLow = 10000;
+int contourAreaFilterHigh = 40000;
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -270,6 +270,7 @@ int RunSingleCamera( PGRGuid guid ) {
 
         // Contours with circle bound --------
         if (c == 's') {
+            cout << "~~~~~~~~~~~~~~~~~~~~ START ~~~~~~~~~~~~~~~~~~~~~~~" << endl;
             int thresh = 100;
             RNG rng(12345);
             Mat threshold_output;
@@ -280,44 +281,52 @@ int RunSingleCamera( PGRGuid guid ) {
             cvtColor(image, src_gray, COLOR_BGR2GRAY);
             blur(src_gray, src_gray, Size(3, 3));
 
-            //for (int x=0; x< 10; x++) {
-                // Detec edges using Threshold
-                threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY);
+            // Detec edges using Threshold
+            threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY);
  
-                // Find contours
-                findContours( threshold_output, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0) );
+            // Find contours
+            findContours( threshold_output, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0) );
  
-                /// Approximate contours to polygons + get bounding rects and circles
-                vector<vector<Point> > contours_poly( contours.size() );
-                cout << "contours.size() " << contours.size() << endl;
-                vector<Point2f>center( contours.size() );
-                vector<float>radius( contours.size() );
+            /// Approximate contours to polygons + get bounding rects and circles
+            vector<vector<Point> > contours_poly( contours.size() );
+            vector<Point2f>center( contours.size() );
+            vector<float>radius( contours.size() );
 
-                for ( size_t i = 0; i < contours.size(); i++ ) {
-                    approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
-                    minEnclosingCircle( contours_poly[i], center[i], radius[i] );
+            for ( size_t i = 0; i < contours.size(); i++ ) {
+                approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
+                minEnclosingCircle( contours_poly[i], center[i], radius[i] );
+            }
+
+            vector< vector<Point> > result_contours;
+            vector< Point2f > result_center;
+            vector< float > result_radius;
+
+            /// Draw polygonal contour + bonding rects + circles
+            Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
+            for ( size_t i = 0; i< contours.size(); i++ ) {
+                if (contourArea(contours[i]) < contourAreaFilterHigh && contourArea(contours[i]) > contourAreaFilterLow) {
+                    Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+                    drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+                    //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
+                    circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
+                    result_contours.push_back(contours[i]);
+                    result_center.push_back(center[i]);
+                    result_radius.push_back(radius[i]);
+                    cout << "~~" << i << "~~" << endl;
+                    cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
+                    cout << "area:   " << contourArea(contours[i]) << endl;
+                    cout << "~~~~~" << endl;
                 }
+            }
+            cout << "result_contours: " << result_contours.size() << endl;
 
-                /// Draw polygonal contour + bonding rects + circles
-                Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
-                for ( size_t i = 0; i< contours.size(); i++ ) {
-                    if (contourArea(contours[i]) < contourAreaFilterHigh && contourArea(contours[i]) > contourAreaFilterLow) {
-                        Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-                        drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
-                        //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
-                        circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
-                        cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
-                        cout << "area:   " << contourArea(contours[i]) << endl;
-                    }
-                }
 
-                imshow("detected circles", drawing);
-                double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
-                cout << "center distance: " << result << endl;
-                cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
-            //}
+            imshow("detected circles", drawing);
+            cout << "~~~~~~~~~~~~~~~~~~~~~ END ~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+            //double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
+            //cout << "center distance: " << result << endl;
+            //cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
         }
-
         imshow(win_title, image);
     }
 
