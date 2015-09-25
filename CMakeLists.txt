@@ -27,5 +27,5 @@ add_executable( app 2_Circles_v3.cpp)
 #add_executable( app generalContours_demo1.cpp )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 
-target_link_libraries( app ${OpenCV_LIBS} -lflycapture )
+target_link_libraries( app ${OpenCV_LIBS} -lflycapture tesseract )
 #target_link_libraries( app ${OpenCV_LIBS} -lflycapture tesseract ${GTK2_LIBRARIES} )

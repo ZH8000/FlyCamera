@@ -309,17 +309,31 @@ int RunSingleCamera( PGRGuid guid ) {
                     drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
                     //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
                     circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
-                    result_contours.push_back(contours[i]);
-                    result_center.push_back(center[i]);
-                    result_radius.push_back(radius[i]);
                     cout << "~~" << i << "~~" << endl;
-                    cout << "radius: " << (int)radius[i] << " center: "<< center[i] << endl;
+                    cout << "radius: " << (int)radius[i] << endl;
+                    result_contours.push_back(contours[i]);
+                    cout << "center: " << center[i] << endl;
+                    result_center.push_back(center[i]);
                     cout << "area:   " << contourArea(contours[i]) << endl;
+                    result_radius.push_back(radius[i]);
                     cout << "~~~~~" << endl;
                 }
             }
-            cout << "result_contours: " << result_contours.size() << endl;
-
+            if ( result_contours.size() != 2) {
+                Point text = Point(50, 50);
+                putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+            } else {
+                double center_distance = sqrt( pow((result_center.at(0).x-result_center.at(1).x), 2) + pow( pow((result_center.at(0).y-result_center.at(1).y), 2), 2) );
+                double radius_diff = abs(result_radius.at(0) - radius.at(1));
+                cout << center_distance << "  " << radius_diff << endl;
+                if ( center_distance > (radius_diff/2) ) {
+                    Point text = Point(50, 50);
+                    putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+                } else {
+                    Point text = Point(50, 50);
+                    putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+                }
+            }
 
             imshow("detected circles", drawing);
             cout << "~~~~~~~~~~~~~~~~~~~~~ END ~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
