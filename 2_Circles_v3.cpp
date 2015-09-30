@@ -269,7 +269,15 @@ int RunSingleCamera( PGRGuid guid ) {
 
         // Contours with circle bound --------
         if (c == 's') {
-            cout << "~~~~~~~~~~~~~~~~~~~~ START ~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+            // print start time
+            time_t t_s = time(0);
+            struct tm * now = localtime( &t_s );
+            cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
+
+            clock_t start, end;
+            double duration;
+            start = clock();
+
             int thresh = 100;
             RNG rng(12345);
             Mat threshold_output;
@@ -352,7 +360,15 @@ int RunSingleCamera( PGRGuid guid ) {
             }
 
             imshow("detected circles", drawing);
-            cout << "~~~~~~~~~~~~~~~~~~~~~ END ~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+
+            end = clock();
+            duration = (double)(end - start) / CLOCKS_PER_SEC;
+            cout << "Duration: "  << duration << endl;
+            // print end time
+            time_t t_e = time(0);
+            struct tm * now_e = localtime( &t_e );
+            cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
+
             //double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
             //cout << "center distance: " << result << endl;
             //cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
