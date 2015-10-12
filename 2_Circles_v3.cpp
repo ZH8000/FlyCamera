@@ -337,7 +337,11 @@ int RunSingleCamera( PGRGuid guid ) {
                 cout << "    diff: " << radius_diff << " ? " << (result_radius.at(0) - result_radius.at(1)) << endl;
                 cout << center_distance << "  " << radius_diff << endl;
                 double bigger_radius = result_radius.at(0);
-                if (result_radius.at(1) > result_radius.at(0)) { bigger_radius = result_radius.at(1); }
+                double smaller_radius = result_radius.at(1);
+                if (result_radius.at(1) > result_radius.at(0)) { 
+                    bigger_radius = result_radius.at(1); 
+                    smaller_radius = result_radius.at(0);
+                }
                 /*
                 if ( center_distance > (radius_diff/2) || radius_diff < (bigger_radius/4) ) {
                     Point text = Point(50, 50);
@@ -346,7 +350,7 @@ int RunSingleCamera( PGRGuid guid ) {
                     Point text = Point(50, 50);
                     putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
                 }*/
-                if (center_distance < (radius_diff/2) && radius_diff > (bigger_radius/4)) {
+                if (center_distance < (radius_diff/2) && radius_diff > (bigger_radius/4) && radius_diff < (smaller_radius/2)) {
                     cout << "center_distance: " << center_distance << endl;
                     cout << "(radius_diff/2): " << (radius_diff/2) << endl;
                     cout << "radius_diff: " << radius_diff << endl;
