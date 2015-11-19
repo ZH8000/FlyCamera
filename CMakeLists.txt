@@ -28,6 +28,7 @@ add_executable( app 2_Circles_v3_head.cpp)
 #add_executable( app hull_demo.cpp )
 #add_executable( app generalContours_demo1.cpp )
 #add_executable( app testGTK.cpp )
+#add_executable( app MultipleCameraEx.cpp )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 
 target_link_libraries( app ${OpenCV_LIBS} -lflycapture tesseract )
