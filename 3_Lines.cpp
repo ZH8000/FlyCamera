@@ -277,94 +277,36 @@ int RunSingleCamera( PGRGuid guid ) {
             clock_t start, end;
             double duration;
             start = clock();
+            //////////////////////////////////////////////////////////////////////////////////////////////////
 
-            int thresh = 100;
-            RNG rng(12345);
-            Mat threshold_output;
-            vector< vector<Point> > contours;
-            vector<Vec4i> hierarchy;
+            Mat cdst;
+            image.copyTo(cdst);
+#if 0
+            vector<Vec2f> lines;
+            HoughLines(image, lines, 1, CV_PI/180, 100, 0, 0);
 
-            Mat src_gray;
-            cvtColor(image, src_gray, COLOR_BGR2GRAY);
-            blur(src_gray, src_gray, Size(3, 3));
-
-            // Detec edges using Threshold
-            threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY);
- 
-            // Find contours
-            findContours( threshold_output, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0) );
- 
-            /// Approximate contours to polygons + get bounding rects and circles
-            vector<vector<Point> > contours_poly( contours.size() );
-            vector<Point2f>center( contours.size() );
-            vector<float>radius( contours.size() );
-
-            for ( size_t i = 0; i < contours.size(); i++ ) {
-                approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
-                minEnclosingCircle( contours_poly[i], center[i], radius[i] );
+            for (size_t x = 0; x < lines.size(); x++) {
+                float rho = lines[x][0], theta = lines[x][1];
+                Point pt1, pt2;
+                double a = cos(theta), b = sin(theta);
+                double x0 = a * rho, y0 = b * rho;
+                pt1.x = cvRound( x0 + 1000*(-b) );
+                pt1.y = cvRound( y0 + 1000*(a) );
+                pt2.x = cvRound( x0 - 1000*(-b) );
+                pt2.y = cvRound( y0 - 1000*(a) );
+                line( cdst, pt1, pt2, Scalar(255,0,255), 3, CV_AA);
             }
-
-            vector< vector<Point> > result_contours;
-            vector< Point2f > result_center;
-            vector< float > result_radius;
-
-            /// Draw polygonal contour + bonding rects + circles
-            Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
-            for ( size_t i = 0; i< contours.size(); i++ ) {
-                if (contourArea(contours[i]) < contourAreaFilterHigh && contourArea(contours[i]) > contourAreaFilterLow) {
-                    Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-                    drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
-                    //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
-                    circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
-                    cout << "~~" << i << "~~" << endl;
-                    cout << "radius: " << (int)radius[i] << endl;
-                    result_contours.push_back(contours[i]);
-                    cout << "center: " << center[i] << endl;
-                    result_center.push_back(center[i]);
-                    cout << "area:   " << contourArea(contours[i]) << endl;
-                    result_radius.push_back(radius[i]);
-                    cout << "~~~~~" << endl;
-                }
+# else 
+            vector<Vec4i> lines;
+            HoughLinesP(image, lines, 1, CV_PI/180, 50, 80, 10 );
+            for( size_t i = 0; i < lines.size(); i++ ) {
+                Vec4i l = lines[i];
+                line( cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 3, CV_AA);
             }
-            if ( result_contours.size() != 2) {
-                Point text = Point(50, 50);
-                putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
-            } else {
-                double center_distance = sqrt( pow((result_center.at(0).x-result_center.at(1).x), 2) + pow( pow((result_center.at(0).y-result_center.at(1).y), 2), 2) );
-                double radius_diff = abs(result_radius.at(0) - result_radius.at(1));
-                cout << "radius 0: " << result_radius.at(0) << endl;
-                cout << "radius 1: " << result_radius.at(1) << endl;
-                cout << "    diff: " << radius_diff << " ? " << (result_radius.at(0) - result_radius.at(1)) << endl;
-                cout << center_distance << "  " << radius_diff << endl;
-                double bigger_radius = result_radius.at(0);
-                double smaller_radius = result_radius.at(1);
-                if (result_radius.at(1) > result_radius.at(0)) { 
-                    bigger_radius = result_radius.at(1); 
-                    smaller_radius = result_radius.at(0);
-                }
-                /*
-                if ( center_distance > (radius_diff/2) || radius_diff < (bigger_radius/4) ) {
-                    Point text = Point(50, 50);
-                    putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
-                } else {
-                    Point text = Point(50, 50);
-                    putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
-                }*/
-                if (center_distance < (radius_diff/2) && radius_diff > (bigger_radius/4) && radius_diff < (smaller_radius/2)) {
-                    cout << "center_distance: " << center_distance << endl;
-                    cout << "(radius_diff/2): " << (radius_diff/2) << endl;
-                    cout << "radius_diff: " << radius_diff << endl;
-                    cout << "(bigger_radius/4): " << (bigger_radius/4) << endl;
-                    Point text = Point(50, 50);
-                    putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
-                } else {
-                    Point text = Point(50, 50);
-                    putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
-                }
-            }
+#endif
+            imshow("detected lines", cdst);
 
-            imshow("detected circles", drawing);
-
+            //////////////////////////////////////////////////////////////////////////////////////////////////
             end = clock();
             duration = (double)(end - start) / CLOCKS_PER_SEC;
             cout << "Duration: "  << duration << endl;

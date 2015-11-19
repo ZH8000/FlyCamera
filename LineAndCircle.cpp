@@ -68,6 +68,8 @@ void on_slider_binaryThresh(int, void*);
 void on_slider_cannyMax(int, void*);       // canny
 void on_slider_cannyThresh(int, void*);
 
+void drawLine(Mat*, Point, Point); // drawLine
+
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
@@ -304,6 +306,9 @@ int RunSingleCamera( PGRGuid guid ) {
         } else {
             destroyWindow("detected circles");
         }
+
+        drawLine(&image, Point(320, 0), Point(320, 480));
+
         imshow(win_title, image);
     }            
 
@@ -433,3 +438,10 @@ void on_slider_cannyThresh(int, void*) {
     }
 }
 // CANNY -end---------------------------------
+// drawLine -start----------------------------
+void drawLine(Mat* img, Point start, Point end) {
+  int thickness = 2;
+  int lineType = 8;
+  line(&img, start, end, Scalar(0, 0, 0), thickness, lineType);
+}
+// drawLine -end------------------------------
