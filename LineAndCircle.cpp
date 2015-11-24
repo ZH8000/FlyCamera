@@ -36,6 +36,10 @@ const char* cann_max   =  "Canny 測邊最大接受閥值(+150)";
 const char* cann_thresh = "Canny 測邊閥值";
 const char* line_title =  "線偵測";
 const char* circ_title =  "圈偵測";
+const char* line_left = "左邊界";
+const char* line_right = "右邊界";
+const char* line_top = "上邊界";
+const char* line_bottom = "下邊界";
 
 int exposureOnOff = 0;         // exposure
 int exposureValue = 0;
@@ -56,6 +60,10 @@ int cannyThresh = 50;
 int oldCannyThresh = 50;
 int lineOnOff = 0;
 int circleOnOff = 0;
+int leftValue = 0;
+int rightValue = 640;
+int topValue = 480;
+int bottomValue = 0;
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -67,8 +75,13 @@ void on_slider_binaryMax(int, void*);      // binarization
 void on_slider_binaryThresh(int, void*);
 void on_slider_cannyMax(int, void*);       // canny
 void on_slider_cannyThresh(int, void*);
+void on_slider_cannyThresh(int, void*);
+void on_slider_leftLine(int, void*);       // drawLine
+void on_slider_rightLine(int, void*);
+void on_slider_topLine(int, void*);
+void on_slider_bottomLine(int, void*);
 
-void drawLine(Mat*, Point, Point); // drawLine
+void drawLine(Mat, Point, Point); // drawLine
 
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
@@ -127,6 +140,10 @@ int main(int argc, char** argv) {
     createTrackbar(cann_thresh,win_opencv,  &cannyThresh,     200, on_slider_cannyThresh);
     createTrackbar(line_title, win_opencv,  &lineOnOff,      1);
     createTrackbar(circ_title, win_opencv,  &circleOnOff,    1);
+    createTrackbar(line_left,  win_opencv,  &leftValue,      640);
+    createTrackbar(line_right, win_opencv,  &rightValue,     640);
+    createTrackbar(line_top,   win_opencv,  &topValue,       480);
+    createTrackbar(line_bottom,win_opencv,  &bottomValue,    480);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -307,7 +324,7 @@ int RunSingleCamera( PGRGuid guid ) {
             destroyWindow("detected circles");
         }
 
-        drawLine(&image, Point(320, 0), Point(320, 480));
+        drawLine(image, Point(320, 0), Point(320, 480));
 
         imshow(win_title, image);
     }            
@@ -439,9 +456,10 @@ void on_slider_cannyThresh(int, void*) {
 }
 // CANNY -end---------------------------------
 // drawLine -start----------------------------
-void drawLine(Mat* img, Point start, Point end) {
+void drawLine(Mat img, Point start, Point end) {
   int thickness = 2;
   int lineType = 8;
-  line(&img, start, end, Scalar(0, 0, 0), thickness, lineType);
+  int shift = 0;
+  line(img, start, end, Scalar(0, 0, 0), thickness, lineType, shift);
 }
 // drawLine -end------------------------------
