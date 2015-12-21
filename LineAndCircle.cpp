@@ -140,10 +140,10 @@ int main(int argc, char** argv) {
     createTrackbar(cann_thresh,win_opencv,  &cannyThresh,     200, on_slider_cannyThresh);
     createTrackbar(line_title, win_opencv,  &lineOnOff,      1);
     createTrackbar(circ_title, win_opencv,  &circleOnOff,    1);
-    createTrackbar(line_left,  win_opencv,  &leftValue,      640);
-    createTrackbar(line_right, win_opencv,  &rightValue,     640);
-    createTrackbar(line_top,   win_opencv,  &topValue,       480);
-    createTrackbar(line_bottom,win_opencv,  &bottomValue,    480);
+    createTrackbar(line_left,  win_title,   &leftValue,      640);
+    createTrackbar(line_right, win_title,   &rightValue,     640);
+    createTrackbar(line_top,   win_title,   &topValue,       480);
+    createTrackbar(line_bottom,win_title,   &bottomValue,    480);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -303,6 +303,7 @@ int RunSingleCamera( PGRGuid guid ) {
         } else {
             destroyWindow("detected lines");
         }
+        // Hough Line END ------
         // Hough Circle --------
         if (circleOnOff == 1) {
             vector<Vec3f> circles;
@@ -323,8 +324,14 @@ int RunSingleCamera( PGRGuid guid ) {
         } else {
             destroyWindow("detected circles");
         }
+        // Hough Circle END ----
 
-        drawLine(image, Point(320, 0), Point(320, 480));
+        // draw lines ----
+        drawLine(image, Point(leftValue, 0), Point(leftValue, 480));   // left
+        drawLine(image, Point(rightValue, 0), Point(rightValue, 480)); // right
+        drawLine(image, Point(0, topValue), Point(640, topValue));       // top
+        drawLine(image, Point(0, bottomValue), Point(640, bottomValue));       // bottom
+        // draw lines END-
 
         imshow(win_title, image);
     }            
@@ -461,5 +468,20 @@ void drawLine(Mat img, Point start, Point end) {
   int lineType = 8;
   int shift = 0;
   line(img, start, end, Scalar(0, 0, 0), thickness, lineType, shift);
+}
+
+void on_slider_leftLine(int, void*) {
+}
+
+void on_slider_rightLine(int, void*) {
+
+}
+
+void on_slider_topLine(int, void*) {
+
+}
+
+void on_slider_bottomLine(int, void*) {
+
 }
 // drawLine -end------------------------------
