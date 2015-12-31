@@ -41,6 +41,10 @@ const char* cann_title =  "Canny 測邊 Off/On";
 const char* cann_max   =  "Canny 測邊最大接受閥值(+150)";
 const char* cann_thresh = "Canny 測邊閥值";
 const char* circ_title =  "圈偵測";
+const char* line_left = "左邊界";                                                                                                                                                                              
+const char* line_right = "右邊界";
+const char* line_top = "上邊界";
+const char* line_bottom = "下邊界";
 
 int exposureOnOff = 0;         // exposure
 int exposureValue = 0;
@@ -65,6 +69,10 @@ int circleParam1 = 60;
 int circleParam2 = 60;
 int contourAreaFilterLow = 10000;
 int contourAreaFilterHigh = 40000;
+int leftValue = 0;             // draw lines.
+int rightValue = 640;
+int topValue = 0;
+int bottomValue = 480;
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -76,6 +84,8 @@ void on_slider_binaryMax(int, void*);      // binarization
 void on_slider_binaryThresh(int, void*);
 void on_slider_cannyMax(int, void*);       // canny
 void on_slider_cannyThresh(int, void*);
+
+void drawLine(Mat, Point, Point); // drawLine
 
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
@@ -133,8 +143,13 @@ int main(int argc, char** argv) {
     createTrackbar(bina_max,   win_opencv,  &binaryMax,      150,  on_slider_binaryMax);
     createTrackbar(bina_thresh,win_opencv,  &binaryThresh,   200,  on_slider_binaryThresh);
 
-    createTrackbar(cont_title1, win_opencv, &contourAreaFilterLow, 90000);
-    createTrackbar(cont_title2, win_opencv, &contourAreaFilterHigh, 90000);
+    createTrackbar(cont_title1, win_opencv, &contourAreaFilterLow, 900000);
+    createTrackbar(cont_title2, win_opencv, &contourAreaFilterHigh, 900000);
+
+    createTrackbar(line_left,  win_title,   &leftValue,      640);
+    createTrackbar(line_right, win_title,   &rightValue,     640);
+    createTrackbar(line_top,   win_title,   &topValue,       480);
+    createTrackbar(line_bottom,win_title,   &bottomValue,    480);
 
     // createTrackbar(cann_title, win_opencv,  &cannyOnOff,     1);
     // createTrackbar(cann_max,   win_opencv,  &cannyMax,       150,  on_slider_cannyMax);
@@ -267,6 +282,12 @@ int RunSingleCamera( PGRGuid guid ) {
             Canny(tmp, image, cannyThresh, (cannyMax+150), 3);
         }
 
+        // draw lines, will crop the image.
+        //drawLine(image, Point(leftValue, 0), Point(leftValue, 480));     // left
+        //drawLine(image, Point(rightValue, 0), Point(rightValue, 480));   // right
+        //drawLine(image, Point(0, topValue), Point(640, topValue));       // top
+        //drawLine(image, Point(0, bottomValue), Point(640, bottomValue)); // bottom
+        image = image(Rect(leftValue,topValue, rightValue-leftValue, bottomValue-topValue));
         // Contours with circle bound --------
         if (c == 's') {
             // print start time
@@ -326,7 +347,7 @@ int RunSingleCamera( PGRGuid guid ) {
                     cout << "~~~~~" << endl;
                 }
             }
-            if ( result_contours.size() != 0) {
+            if ( result_contours.size() != 1) {
                 Point text = Point(50, 50);
                 putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
             } else {
@@ -476,3 +497,11 @@ void on_slider_cannyThresh(int, void*) {
     }
 }
 // CANNY -end---------------------------------
+// drawLine -start----------------------------
+void drawLine(Mat img, Point start, Point end) {
+    int thickness = 2;
+    int lineType = 8;
+    int shift = 0;
+    line(img, start, end, Scalar(0, 0, 0), thickness, lineType, shift);
+}
+// drawLine -end------------------------------

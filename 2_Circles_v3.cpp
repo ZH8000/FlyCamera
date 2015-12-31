@@ -143,8 +143,8 @@ int main(int argc, char** argv) {
     createTrackbar(bina_max,   win_opencv,  &binaryMax,      150,  on_slider_binaryMax);
     createTrackbar(bina_thresh,win_opencv,  &binaryThresh,   200,  on_slider_binaryThresh);
 
-    createTrackbar(cont_title1, win_opencv, &contourAreaFilterLow, 90000);
-    createTrackbar(cont_title2, win_opencv, &contourAreaFilterHigh, 90000);
+    createTrackbar(cont_title1, win_opencv, &contourAreaFilterLow, 900000);
+    createTrackbar(cont_title2, win_opencv, &contourAreaFilterHigh, 900000);
 
     createTrackbar(line_left,  win_title,   &leftValue,      640);
     createTrackbar(line_right, win_title,   &rightValue,     640);
@@ -283,10 +283,10 @@ int RunSingleCamera( PGRGuid guid ) {
         }
 
         // draw lines, will crop the image.
-        drawLine(image, Point(leftValue, 0), Point(leftValue, 480));     // left
-        drawLine(image, Point(rightValue, 0), Point(rightValue, 480));   // right
-        drawLine(image, Point(0, topValue), Point(640, topValue));       // top
-        drawLine(image, Point(0, bottomValue), Point(640, bottomValue)); // bottom
+        // drawLine(image, Point(leftValue, 0), Point(leftValue, 480));     // left
+        // drawLine(image, Point(rightValue, 0), Point(rightValue, 480));   // right
+        // drawLine(image, Point(0, topValue), Point(640, topValue));       // top
+        // drawLine(image, Point(0, bottomValue), Point(640, bottomValue)); // bottom
         image = image(Rect(leftValue,topValue, rightValue-leftValue, bottomValue-topValue));
         // Contours with circle bound --------
         if (c == 's') {
@@ -347,7 +347,7 @@ int RunSingleCamera( PGRGuid guid ) {
                     cout << "~~~~~" << endl;
                 }
             }
-            if ( result_contours.size() != 2) {
+            if ( result_contours.size() != 2) { // It should only two contours.
                 Point text = Point(50, 50);
                 putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
             } else {
@@ -371,11 +371,15 @@ int RunSingleCamera( PGRGuid guid ) {
                     Point text = Point(50, 50);
                     putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
                 }*/
+                cout << "center_distance: " << center_distance << endl;
+                cout << "(radius_diff/2): " << (radius_diff/2) << endl;
+                cout << "radius_diff: " << radius_diff << endl;
+                cout << "(bigger_radius/4): " << (bigger_radius/4) << endl;
+                cout << "(smaller_radius/2): " << (smaller_radius/2) << endl;
+                // 1. 兩個中心點距離 > 1/2半徑差
+                // 2. 半徑差 > 1/4大圓半徑
+                // 3. 半徑差 < 1/2小圓半徑
                 if (center_distance < (radius_diff/2) && radius_diff > (bigger_radius/4) && radius_diff < (smaller_radius/2)) {
-                    cout << "center_distance: " << center_distance << endl;
-                    cout << "(radius_diff/2): " << (radius_diff/2) << endl;
-                    cout << "radius_diff: " << radius_diff << endl;
-                    cout << "(bigger_radius/4): " << (bigger_radius/4) << endl;
                     Point text = Point(50, 50);
                     putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
                 } else {
@@ -533,4 +537,4 @@ void drawLine(Mat img, Point start, Point end) {
     int shift = 0;
     line(img, start, end, Scalar(0, 0, 0), thickness, lineType, shift);
 }
-
+// drawLine -end------------------------------
