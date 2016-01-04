@@ -57,9 +57,9 @@ int circleParam2 = 60;
 int contourAreaFilterLow = 10000;
 int contourAreaFilterHigh = 40000;
 int leftValue = 0;             // draw lines.
-int rightValue = 640;
+int rightValue = 320;
 int topValue = 0;
-int bottomValue = 480;
+int bottomValue = 240;
 
 Camera cam;
 Mat sampleImage;
@@ -109,8 +109,6 @@ void OCR(Mat*);
 void on_slider_cannyMax(int, void*);       // canny
 void on_slider_cannyThresh(int, void*);
 
-void drawLine(Mat, Point, Point); // drawLine
-
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
@@ -134,7 +132,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    namedWindow(win_title, WINDOW_AUTOSIZE);
+    namedWindow(win_title, WINDOW_NORMAL);
     //resizeWindow(win_title, 1024, 768);
     namedWindow(win_setting, WINDOW_NORMAL);
     namedWindow(win_opencv, WINDOW_NORMAL);
@@ -155,10 +153,10 @@ int main(int argc, char** argv)
 	createTrackbar(cont_title1, win_opencv, &contourAreaFilterLow, 900000);
     createTrackbar(cont_title2, win_opencv, &contourAreaFilterHigh, 900000);
 
-    createTrackbar(line_left,  win_title,   &leftValue,      640);
-    createTrackbar(line_right, win_title,   &rightValue,     640);
-    createTrackbar(line_top,   win_title,   &topValue,       480);
-    createTrackbar(line_bottom,win_title,   &bottomValue,    480);
+    createTrackbar(line_left,  win_title,   &leftValue,      320);
+    createTrackbar(line_right, win_title,   &rightValue,     320);
+    createTrackbar(line_top,   win_title,   &topValue,       240);
+    createTrackbar(line_bottom,win_title,   &bottomValue,    240);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
@@ -355,6 +353,11 @@ int RunSingleCamera( PGRGuid guid ) {
              sampleImages.clear();
              sampleImagesFlag = 0;
              cout << "-------Reset Sampling-------" << endl;
+            for (int x = 0; x < 10; x++) {
+                stringstream ss;
+                ss << x;
+                destroyWindow(ss.str());
+            }
          }
 
         // Convert to RGB
@@ -368,6 +371,7 @@ int RunSingleCamera( PGRGuid guid ) {
         Size size = Size(320, 240);
         resize(image, image, size);
 
+        // binarization
         if (binaryOnOff == 1) {
             if(binaryInvOnOff == 1) {
                 threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
@@ -375,6 +379,16 @@ int RunSingleCamera( PGRGuid guid ) {
                 threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
             }
         }
+
+        // Canny
+        if (cannyOnOff == 1) {
+            Mat tmp;
+            image.copyTo(tmp);
+            Canny(tmp, image, cannyThresh, (cannyMax+150), 3);
+        }
+
+        // ROI
+        image = image(Rect(leftValue,topValue, rightValue-leftValue, bottomValue-topValue));
 
         if (c == 's') {
             if (sampleImages.size() < sampleImagesSize) {
@@ -412,6 +426,87 @@ int RunSingleCamera( PGRGuid guid ) {
                 // Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
                 // imshow("AKAZE 比對結果", res);
             }
+        }
+
+        if (c == 'z') {
+            // print start time
+            time_t t_s = time(0);
+            struct tm * now = localtime( &t_s );
+            cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
+
+            clock_t start, end;
+            double duration;
+            start = clock();
+
+            int thresh = 100;
+            RNG rng(12345);
+            Mat threshold_output;
+            vector< vector<Point> > contours;
+            vector<Vec4i> hierarchy;
+
+            Mat src_gray;
+            cvtColor(image, src_gray, COLOR_BGR2GRAY);
+            blur(src_gray, src_gray, Size(3, 3));
+
+            // Detec edges using Threshold
+            threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY);
+ 
+            // Find contours
+            findContours( threshold_output, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0) );
+ 
+            /// Approximate contours to polygons + get bounding rects and circles
+            vector<vector<Point> > contours_poly( contours.size() );
+            vector<Point2f>center( contours.size() );
+            vector<float>radius( contours.size() );
+
+            for ( size_t i = 0; i < contours.size(); i++ ) {
+                approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
+                minEnclosingCircle( contours_poly[i], center[i], radius[i] );
+            }
+
+            vector< vector<Point> > result_contours;
+            vector< Point2f > result_center;
+            vector< float > result_radius;
+
+            /// Draw polygonal contour + bonding rects + circles
+            Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
+            for ( size_t i = 0; i< contours.size(); i++ ) {
+                if (contourArea(contours[i]) < contourAreaFilterHigh && contourArea(contours[i]) > contourAreaFilterLow) {
+                    Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+                    drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+                    //rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
+                    circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
+                    cout << "~~" << i << "~~" << endl;
+                    cout << "radius: " << (int)radius[i] << endl;
+                    result_contours.push_back(contours[i]);
+                    cout << "center: " << center[i] << endl;
+                    result_center.push_back(center[i]);
+                    cout << "area:   " << contourArea(contours[i]) << endl;
+                    result_radius.push_back(radius[i]);
+                    cout << "~~~~~" << endl;
+                }
+            }
+            if ( result_contours.size() != 1) {
+                Point text = Point(50, 50);
+                putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+            } else {
+                Point text = Point(50, 50);
+                putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+            }
+
+            imshow("detected circles", drawing);
+
+            end = clock();
+            duration = (double)(end - start) / CLOCKS_PER_SEC;
+            cout << "Duration: "  << duration << endl;
+            // print end time
+            time_t t_e = time(0);
+            struct tm * now_e = localtime( &t_e );
+            cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
+
+            //double result = sqrt( pow((center[1].x-center[2].x), 2) + pow( pow((center[1].y-center[2].y), 2), 2) );
+            //cout << "center distance: " << result << endl;
+            //cout << "radius difference: " << abs(radius[1] - radius[2]) << endl;
         }
 
         imshow(win_title, image);
@@ -599,11 +694,3 @@ void on_slider_cannyThresh(int, void*) {
     }
 }
 // CANNY -end---------------------------------
-// drawLine -start----------------------------
-void drawLine(Mat img, Point start, Point end) {
-    int thickness = 2;
-    int lineType = 8;
-    int shift = 0;
-    line(img, start, end, Scalar(0, 0, 0), thickness, lineType, shift);
-}
-// drawLine -end------------------------------
