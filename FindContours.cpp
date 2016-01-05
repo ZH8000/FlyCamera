@@ -37,6 +37,7 @@ const char* bina_max = "影像二元化最大接受閥值(+150)"; // binarizatio
 const char* bina_thresh = "影像二元化閥值";      // binarization thresh will between 0 ~ 150
 const char* cann_title = "Canny 測邊 + 尋找輪廓";
 const char* cann_value = "Canny 閥值";
+const char* cont_title = "Contour 輪廓 Off/On";
 
 int exposureOnOff = 0;         // exposure
 int exposureValue = 0;
@@ -54,6 +55,7 @@ int binaryThresh = 30;
 int oldBinaryThresh = 30;
 int cannyOnOff = 0;            // Canny
 int cannyValue = 80;
+int contoursOnOff = 0;
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -207,8 +209,14 @@ int RunSingleCamera( PGRGuid guid ) {
         }
 
         if (cannyOnOff == 1) {
-            Mat cannyImage;
             Canny(image, image, cannyValue, cannyValue*2, 3);
+        }
+
+        if (contoursOnOff == 1) {
+            vector<vector<Point>> contours;
+            vector<Vec4i> hierarchy;
+
+            findContours(image, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
         }
 
         imshow(win_title, image);
@@ -278,6 +286,8 @@ int main() {
 
     createTrackbar(cann_title, win_opencv, &cannyOnOff, 1);
     createTrackbar(cann_value, win_opencv, &cannyValue, 255, on_slider_cannyThresh);
+
+    createTrackbar(cont_title, win_opencv, &contoursOnOff, 1);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
