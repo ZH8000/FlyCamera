@@ -421,12 +421,13 @@ int RunSingleCamera( PGRGuid guid ) {
                     cout << "~~~~~" << endl;
                 }
             }
-            if ( result_contours.size() != 1) {
-                Point text = Point(50, 50);
-                putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
-            } else {
+            
+            if ( result_contours.size() == 1) {
                 Point text = Point(50, 50);
                 putText(drawing, "O", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+            } else {
+                Point text = Point(50, 50);
+                putText(drawing, "X", text, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
             }
 
             imshow("detected circles", drawing);
