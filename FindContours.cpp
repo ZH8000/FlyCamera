@@ -38,6 +38,7 @@ const char* bina_thresh = "影像二元化閥值";      // binarization thresh w
 const char* cann_title = "Canny 測邊 + 尋找輪廓";
 const char* cann_value = "Canny 閥值";
 const char* cont_title = "Contour 輪廓 Off/On";
+const char* rect_title = "最小矩形 包圍輪廓 Off/On";
 
 int exposureOnOff = 0;         // exposure
 int exposureValue = 0;
@@ -55,7 +56,8 @@ int binaryThresh = 30;
 int oldBinaryThresh = 30;
 int cannyOnOff = 0;            // Canny
 int cannyValue = 80;
-int contoursOnOff = 0;
+int contoursOnOff = 0;         // contours
+int minAreaRectOnOff = 0;      // minAreaRect
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -110,6 +112,8 @@ void PrintError( FlyCapture2::Error error ) {
 }
 
 int RunSingleCamera( PGRGuid guid ) {
+    RNG& rng = theRNG();
+
     const int k_numImages = 10;
 
     FlyCapture2::Error error;
@@ -217,7 +221,58 @@ int RunSingleCamera( PGRGuid guid ) {
             vector<Vec4i> hierarchy;
 
             findContours(image, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+
+            image = Mat::zeros(image.size(), CV_8UC3);
+            for (int x = 0; x < contours.size(); x++) {
+                Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255)); // random color
+                drawContours(image, contours, x, color, 2, 8, hierarchy, 0, Point());
+            }
+
+            if (minAreaRectOnOff == 1) {
+                vector<Rect> boundRect(contours.size());
+                for (int x = 0; x < contours.size(); x++) {
+                    RotatedRect box = minAreaRect(contours[x]);
+                    Point2f vertex[4];
+                    box.points(vertex);
+
+                    
+                    for (int y = 0; y < 4; y++) {
+                        line(image, vertex[y], vertex[(y+1)%4], Scalar(0,255,0), 2, LINE_AA);
+                    }
+                    /*
+                    line(image, vertex[0], vertex[(0+1)%4], Scalar(255,0,0), 2, LINE_AA);
+                    line(image, vertex[1], vertex[(1+1)%4], Scalar(0,255,0), 2, LINE_AA);
+                    line(image, vertex[2], vertex[(2+1)%4], Scalar(0,0,255), 2, LINE_AA);
+                    line(image, vertex[3], vertex[(3+1)%4], Scalar(255,255,255), 2, LINE_AA);
+                    */
+                    double dist_a = cv::norm(vertex[0] - vertex[1]);
+                    double dist_b = cv::norm(vertex[1] - vertex[2]);
+                    std::ostringstream width;
+                    std::ostringstream height;
+                    if (dist_a > dist_b) {
+                        height << dist_a;
+                        width << dist_b;
+                    } else {
+                        height << dist_b;
+                        width << dist_a;
+                    }
+
+                    putText(image, "H:" + height.str(), Point(50, 50), CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+                    putText(image, "W:" + width.str(), Point(50, 80), CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+                }
+            }
         }
+
+        /*
+        if (minAreaRectOnOff == 1) {
+            RotatedRect box = minAreaRect(image);
+            Point2f vertex[4];
+            box.points(vertex);
+
+            for (int x = 0; x < 4; x++) {
+                line(image, vertex[x], vertex[(x+1)%4], Scalar(100,200,211), 2, LINE_AA);
+            }
+        }*/
 
         imshow(win_title, image);
 
@@ -288,6 +343,8 @@ int main() {
     createTrackbar(cann_value, win_opencv, &cannyValue, 255, on_slider_cannyThresh);
 
     createTrackbar(cont_title, win_opencv, &contoursOnOff, 1);
+
+    createTrackbar(rect_title, win_opencv, &minAreaRectOnOff, 1);
 
     for (unsigned int i=0; i < numCameras; i++) {
         PGRGuid guid;
