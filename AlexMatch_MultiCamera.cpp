@@ -27,6 +27,11 @@ const char* win_setting = "攝影機 設定";
 const char* win_opencv = "OpenCV 設定";
 const char* win_akaze = "AKAZE 比對結果";
 
+stringstream ss_title;
+stringstream ss_setting;
+stringstream ss_opencv;
+stringstream ss_akaze;
+
 int exposureOnOff = 0;         // exposure
 int exposureValue = 0;
 int sharpnessOnOff = 0;        // sharpness
@@ -84,6 +89,20 @@ void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
 
+void PrintFormat7Capabilities(Format7Info fmt7Info) {
+    cout << "Max image pixel: (" << fmt7Info.maxWidth << ", " << fmt7Info.maxHeight << ")" << endl;
+    cout << "Image Unit size: (" << fmt7Info.imageHStepSize << ", " << fmt7Info.imageVStepSize << ")" << endl;
+    cout << "Offset Unit size: (" << fmt7Info.offsetHStepSize << ", " << fmt7Info.offsetVStepSize << ")" << endl;
+    cout << "Pixel format bitfield: 0x" << fmt7Info.pixelFormatBitField << endl;
+}
+
+void PrintFormat7ImageSettings(Format7ImageSettings fmt7Settings) {
+    cout << "offsetX: " << fmt7Settings.offsetX << endl;
+    cout << "offsetY: " << fmt7Settings.offsetY << endl;
+    cout << "width:" << fmt7Settings.width << endl;
+    cout << "height:" << fmt7Settings.height << endl;
+}
+
 void getCameraProp(Camera*);
 int RunSingleCamera( PGRGuid guid );
 
@@ -107,6 +126,8 @@ int main(int argc, char** argv)
     FlyCapture2::Error error;
     BusManager busMgr;
     unsigned int numCameras;
+    const Mode k_fmt7Mode = MODE_0;
+    const PixelFormat k_fmt7PixFmt = PIXEL_FORMAT_MONO8;
 
     error = busMgr.GetNumOfCameras(&numCameras);
     if (error != PGRERROR_OK) {
@@ -114,23 +135,26 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    namedWindow(win_title, WINDOW_AUTOSIZE);
-    //resizeWindow(win_title, 1024, 768);
-    namedWindow(win_setting, WINDOW_NORMAL);
-    namedWindow(win_opencv, WINDOW_NORMAL);
+    ss_title << win_title << SerialNumber;
+    ss_setting << win_setting << SerialNumber;
+    ss_opencv << win_opencv << SerialNumber;
 
-    createTrackbar(expo_title, win_setting, &exposureOnOff, 1, on_slider_exposureOnOff);
-    createTrackbar(expo_value, win_setting, &exposureValue, 1023, on_slider_exposureValue);
-    createTrackbar(shar_title, win_setting, &sharpnessOnOff, 1, on_slider_sharpnessOnOff);
-    createTrackbar(shar_value, win_setting, &sharpnessValue, 4095, on_slider_sharpnessValue);
-    createTrackbar(shut_title, win_setting, &shutterOnOff, 1, on_slider_shutterOnOff);
-    createTrackbar(shut_value, win_setting, &shutterValue, 1590, on_slider_shutterValue);
-    createTrackbar(bina_title, win_opencv, &binaryOnOff, 1);
-    createTrackbar(binv_title, win_opencv, &binaryInvOnOff, 1);
-    createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
-    createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
-    createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
-    createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
+    namedWindow(ss_title.str(), WINDOW_AUTOSIZE);
+    namedWindow(ss_setting.str(), WINDOW_NORMAL);
+    namedWindow(ss_opencv.str(), WINDOW_NORMAL);
+
+    createTrackbar(expo_title, ss_setting.str(), &exposureOnOff, 1, on_slider_exposureOnOff);
+    createTrackbar(expo_value, ss_setting.str(), &exposureValue, 1023, on_slider_exposureValue);
+    createTrackbar(shar_title, ss_setting.str(), &sharpnessOnOff, 1, on_slider_sharpnessOnOff);
+    createTrackbar(shar_value, ss_setting.str(), &sharpnessValue, 4095, on_slider_sharpnessValue);
+    createTrackbar(shut_title, ss_setting.str(), &shutterOnOff, 1, on_slider_shutterOnOff);
+    createTrackbar(shut_value, ss_setting.str(), &shutterValue, 1590, on_slider_shutterValue);
+    createTrackbar(bina_title, ss_opencv.str(), &binaryOnOff, 1);
+    createTrackbar(binv_title, ss_opencv.str(), &binaryInvOnOff, 1);
+    createTrackbar(bina_max, ss_opencv.str(), &binaryMax, 150, on_slider_binaryMax);
+    createTrackbar(bina_thresh, ss_opencv.str(), &binaryThresh, 150, on_slider_binaryThresh);
+    createTrackbar(succ_matches, ss_opencv.str(), &successMatches, 4000);
+    createTrackbar(tess_title, ss_opencv.str(), &ocrOnOff, 1);
 
     Camera** ppCameras = new Camera*[numCameras];
     for (unsigned int i=0; i < numCameras; i++) {
@@ -157,9 +181,64 @@ int main(int argc, char** argv)
             return -1;
         }
         if (camInfo.serialNumber == SerialNumber) {
+            cout << "Find the camera: " << SerialNumber << endl;
+
+            // 1. get Format7Info
+            Format7Info fmt7Info;
+            bool supported;
+            fmt7Info.mode = k_fmt7Mode;
+            error = ppCameras[i] -> GetFormat7Info(&fmt7Info, &supported);
+            if (error != PGRERROR_OK) {
+                PrintError(error);
+                return -1;
+            }
+            PrintFormat7Capabilities(fmt7Info);
+
+            // 2. validate Format7ImageSettings
+            Format7ImageSettings fmt7ImageSettings;
+            fmt7ImageSettings.mode = k_fmt7Mode;
+            fmt7ImageSettings.offsetX = 0;
+            fmt7ImageSettings.offsetY = 0;
+            fmt7ImageSettings.width = fmt7Info.maxWidth;
+            fmt7ImageSettings.height = fmt7Info.maxHeight;
+            fmt7ImageSettings.pixelFormat = k_fmt7PixFmt;
+
+            bool valid;
+            Format7PacketInfo fmt7PacketInfo;
+
+            error = ppCameras[i] -> ValidateFormat7Settings(&fmt7ImageSettings, &valid, &fmt7PacketInfo);
+            if (error != PGRERROR_OK) {
+                PrintError(error);
+                return -1;
+            }
+            if (!valid) {
+                cout << "Format7 settings are not valid" << endl;
+            }
+/*
+            unsigned int packetSize;
+            float percentage;
+            error = ppCameras[i] -> GetFormat7Configuration(&fmt7ImageSettings, &packetSize, &percentage);
+            if (error != PGRERROR_OK) {
+                PrintError(error);
+                return -1;
+            }
+            cout << "Format7ImageSettings: packetSize: " << packetSize << endl;
+            PrintFormat7ImageSettings(fmt7ImageSettings);
+ */
+
+            // 3. setFormat7Configuration
+            //const unsigned int bestPacketSize = 1968;
+            const unsigned int bestPacketSize = 984;
+            //error = ppCameras[i] -> SetFormat7Configuration(&fmt7ImageSettings, fmt7PacketInfo.recommendedBytesPerPacket);
+            error = ppCameras[i] -> SetFormat7Configuration(&fmt7ImageSettings, bestPacketSize);
+            if (error != PGRERROR_OK) {
+                PrintError(error);
+                return -1;
+            }
+
             RunSingleCamera( guid );
         } else {
-            cout << "Camera NOT FOUND!" << endl;
+            cout << "Camera NOT corrent: " << camInfo.serialNumber << endl;
         }
     }   
 
@@ -267,15 +346,15 @@ void getCameraProp(Camera* cam) {
             exposureOnOff = camProp.autoManualMode;
             exposureValue = camProp.valueA;
 
-            setTrackbarPos(expo_title, win_setting, exposureOnOff);
-            setTrackbarPos(expo_value, win_setting, exposureValue);
+            setTrackbarPos(expo_title, ss_setting.str(), exposureOnOff);
+            setTrackbarPos(expo_value, ss_setting.str(), exposureValue);
         } else
         if (camPropInfo.type == SHARPNESS) {
             sharpnessOnOff = camProp.autoManualMode;
             sharpnessValue = camProp.valueA;
 
-            setTrackbarPos(shar_title, win_setting, sharpnessOnOff);
-            setTrackbarPos(shar_value, win_setting, sharpnessValue);
+            setTrackbarPos(shar_title, ss_setting.str(), sharpnessOnOff);
+            setTrackbarPos(shar_value, ss_setting.str(), sharpnessValue);
         } else
         if (camPropInfo.type == GAMMA) {
         } else
@@ -283,8 +362,8 @@ void getCameraProp(Camera* cam) {
             shutterOnOff = camProp.autoManualMode;
             shutterValue = camProp.valueA;
 
-            setTrackbarPos(shut_title, win_setting, shutterOnOff);
-            setTrackbarPos(shut_value, win_setting, shutterValue);
+            setTrackbarPos(shut_title, ss_setting.str(), shutterOnOff);
+            setTrackbarPos(shut_value, ss_setting.str(), shutterValue);
         } else
         if (camPropInfo.type == GAIN) {
         } else
@@ -394,7 +473,7 @@ int RunSingleCamera( PGRGuid guid ) {
             }
         }
 
-        imshow(win_title, image);
+        imshow(ss_title.str(), image);
     }
 
     // Stop capturing images
@@ -489,7 +568,7 @@ void on_slider_shutterValue(int, void*) {
 // BINARIZATION -start------------------------
 void on_slider_binaryMax(int, void*) {
     if (binaryOnOff == 0) {
-        setTrackbarPos(bina_max, win_opencv, oldBinaryMax);
+        setTrackbarPos(bina_max, ss_opencv.str(), oldBinaryMax);
     } else {
         oldBinaryMax = binaryMax;
     }
@@ -497,7 +576,7 @@ void on_slider_binaryMax(int, void*) {
 
 void on_slider_binaryThresh(int, void*) {
     if (binaryOnOff == 0) {
-        setTrackbarPos(bina_thresh, win_opencv, oldBinaryThresh);
+        setTrackbarPos(bina_thresh, ss_opencv.str(), oldBinaryThresh);
     } else {
         oldBinaryThresh = binaryThresh;
     }
@@ -555,7 +634,7 @@ void OCR(Mat *image) {
     char* out = tess.GetUTF8Text();
 
     ocrOnOff = 0;
-    setTrackbarPos(tess_title, win_opencv, ocrOnOff);
+    setTrackbarPos(tess_title, ss_opencv.str(), ocrOnOff);
 
     cout << out << endl;
     cout << "-----------------------------" << endl;
