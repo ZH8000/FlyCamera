@@ -139,7 +139,7 @@ int main(int argc, char** argv)
     ss_setting << win_setting << SerialNumber;
     ss_opencv << win_opencv << SerialNumber;
 
-    namedWindow(ss_title.str(), WINDOW_AUTOSIZE);
+    namedWindow(ss_title.str(), WINDOW_NORMAL);
     namedWindow(ss_setting.str(), WINDOW_NORMAL);
     namedWindow(ss_opencv.str(), WINDOW_NORMAL);
 

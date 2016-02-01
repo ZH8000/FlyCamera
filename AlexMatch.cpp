@@ -102,7 +102,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    namedWindow(win_title, WINDOW_AUTOSIZE);
+    namedWindow(win_title, WINDOW_NORMAL);
     //resizeWindow(win_title, 1024, 768);
     namedWindow(win_setting, WINDOW_NORMAL);
     namedWindow(win_opencv, WINDOW_NORMAL);
@@ -315,6 +315,11 @@ int RunSingleCamera( PGRGuid guid ) {
              sampleImages.clear();
              sampleImagesFlag = 0;
              cout << "-------Reset Sampling-------" << endl;
+             for (int x = 0; x < sampleImagesSize; x++) {
+                stringstream ss;
+                ss << x;
+                destroyWindow(ss.str());
+             }
          }
 
         // Convert to RGB
