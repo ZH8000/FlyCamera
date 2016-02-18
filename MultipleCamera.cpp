@@ -21,12 +21,19 @@
 #include <FlyCapture2.h>
 #include <iostream>
 #include <sstream>
+#include <thread>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 using namespace FlyCapture2;
 using namespace std;
+using namespace cv;
 
-void PrintBuildInfo()
-{
+int RunSingleCamera( PGRGuid guid , unsigned int serialNumber);
+
+void PrintBuildInfo() {
     FC2Version fc2Version;
     Utilities::GetLibraryVersion( &fc2Version );
     
@@ -39,8 +46,7 @@ void PrintBuildInfo()
     cout << timeStamp.str() << endl << endl;  
 }
 
-void PrintCameraInfo( CameraInfo* pCamInfo )
-{
+void PrintCameraInfo( CameraInfo* pCamInfo ) {
     cout << endl;
     cout << "*** CAMERA INFORMATION ***" << endl;
     cout << "Serial number -" << pCamInfo->serialNumber << endl;
@@ -52,31 +58,31 @@ void PrintCameraInfo( CameraInfo* pCamInfo )
     cout << "Firmware build time - " << pCamInfo->firmwareBuildTime << endl << endl;
 }
 
-void PrintError( Error error )
-{
+void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
 
-int main(int /*argc*/, char** /*argv*/)
-{
+void c11thread() {
+    cout << "thread" << endl;
+}
+
+int main(int /*argc*/, char** /*argv*/) {
     PrintBuildInfo();
 
     const int k_numImages = 100;
-    Error error;
+    FlyCapture2::Error error;
 
     BusManager busMgr;
     unsigned int numCameras;
     error = busMgr.GetNumOfCameras(&numCameras);
-    if (error != PGRERROR_OK)
-    {
+    if (error != PGRERROR_OK) {
         PrintError( error );
         return -1;
     }
 
     cout << "Number of cameras detected: " << numCameras << endl; 
 
-    if ( numCameras < 1 )
-    {
+    if ( numCameras < 1 ) {
         cout << "Insufficient number of cameras... press Enter to exit." << endl; ;
         cin.ignore();
         return -1;
@@ -86,22 +92,19 @@ int main(int /*argc*/, char** /*argv*/)
 
     // Connect to all detected cameras and attempt to set them to
     // a common video mode and frame rate
-    for ( unsigned int i = 0; i < numCameras; i++)
-    {
+    for ( unsigned int i = 0; i < numCameras; i++) {
         ppCameras[i] = new Camera();
 
         PGRGuid guid;
         error = busMgr.GetCameraFromIndex( i, &guid );
-        if (error != PGRERROR_OK)
-        {
+        if (error != PGRERROR_OK) {
             PrintError( error );
             return -1;
         }
 
         // Connect to a camera
         error = ppCameras[i]->Connect( &guid );
-        if (error != PGRERROR_OK)
-        {
+        if (error != PGRERROR_OK) {
             PrintError( error );
             return -1;
         }
@@ -109,77 +112,60 @@ int main(int /*argc*/, char** /*argv*/)
         // Get the camera information
         CameraInfo camInfo;
         error = ppCameras[i]->GetCameraInfo( &camInfo );
-        if (error != PGRERROR_OK)
-        {
+        if (error != PGRERROR_OK) {
             PrintError( error );
             return -1;
         }
 
         PrintCameraInfo(&camInfo); 
 
-        // Set all cameras to a specific mode and frame rate so they
-        // can be synchronized
-/*
-        error = ppCameras[i]->SetVideoModeAndFrameRate( 
-            VIDEOMODE_640x480Y8, 
-            FRAMERATE_30 );
-        if (error != PGRERROR_OK)
-        {
-            PrintError( error );
-            cout << "Error starting cameras. " << endl;
-            cout << "This example requires cameras to be able to set to 640x480 Y8 at 30fps. " << endl;
-            cout << "If your camera does not support this mode, please edit the source code and recompile the application. " << endl;
-            cout << "Press Enter to exit. " << endl;
-			
-            cin.ignore();
-            return -1;
-        }
-*/
+        //RunSingleCamera( guid, camInfo.serialNumber );
+        std::thread t(RunSingleCamera, guid, camInfo.serialNumber);
+        //t.detach();
+        t.join();
     }
-    
-    error = Camera::StartSyncCapture( numCameras, (const Camera**)ppCameras );
-    if (error != PGRERROR_OK)
-    {
-        PrintError( error );
-        cout << "Error starting cameras. " << endl;
-        cout << "This example requires cameras to be able to set to 640x480 Y8 at 30fps. " << endl;
-        cout << "If your camera does not support this mode, please edit the source code and recompile the application. " << endl;
-        cout << "Press Enter to exit. " << endl;
 
-        cin.ignore();
+    return 0;
+}
+
+int RunSingleCamera( PGRGuid guid, unsigned int serialNumber ) {
+
+    cout << "RunSingleCamera..." << serialNumber  << endl;
+
+    Camera cam;
+    FlyCapture2::Error error;
+
+
+    error = cam.Connect( &guid );
+    if ( error != PGRERROR_OK ) {
+        PrintError( error );
         return -1;
     }
 
-    for ( int j = 0; j < k_numImages; j++ )
-    {
-        // Display the timestamps for all cameras to show that the image
-        // capture is synchronized for each image
-        for ( unsigned int i = 0; i < numCameras; i++ )
-        {
-            Image image;
-            error = ppCameras[i]->RetrieveBuffer( &image );
-            if (error != PGRERROR_OK)
-            {
-                PrintError( error );
-                return -1;
-            }
+    error = cam.StartCapture();
+    if ( error != PGRERROR_OK ) {
+        PrintError( error );
+        return -1;
+    }
 
-            TimeStamp timestamp = image.GetTimeStamp();
-            cout << "Cam " << i << " - Frame " << j << " - TimeStamp [" << timestamp.cycleSeconds << " " << timestamp.cycleCount << "]" << endl;
+    Image rawImage;
+
+    while( true ) {
+        error = cam.RetrieveBuffer( &rawImage );
+        if ( error != PGRERROR_OK ) {
+            PrintError( error );
         }
+    
+        Image rgbImage;
+        rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
+    
+        // convert to OpenCV Mat
+        unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
+        Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
+    
+        stringstream ss;
+        ss << serialNumber << ".png";
+        imshow("hello", image);
+        //imwrite(ss.str(), image);
     }
-
-    for ( unsigned int i = 0; i < numCameras; i++ )
-    {
-        ppCameras[i]->StopCapture();
-        ppCameras[i]->Disconnect();
-        delete ppCameras[i];
-    }
-
-    delete [] ppCameras;
-
-    cout << "Done! Press Enter to exit..." << endl; 
-    cin.ignore();
-
-    return 0;
 }
