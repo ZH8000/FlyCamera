@@ -335,6 +335,7 @@ int main() {
     }
 
     namedWindow(win_title, WINDOW_NORMAL);
+    moveWindow(win_title, 0, 0);
     namedWindow(win_setting, WINDOW_NORMAL);
     namedWindow(win_opencv, WINDOW_NORMAL);
     // Setup trackbar

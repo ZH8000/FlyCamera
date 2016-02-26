@@ -39,6 +39,7 @@ const char* cann_title = "Canny 測邊 + 尋找輪廓";
 const char* cann_value = "Canny 閥值";
 const char* cont_title = "Contour 輪廓 Off/On";
 const char* rect_title = "最小矩形 包圍輪廓 Off/On";
+const char* line_title = "霍夫變換(直線)";
 const char* line_left = "左邊界";
 const char* line_right = "右邊界";
 const char* line_top = "上邊界";
@@ -62,6 +63,7 @@ int cannyOnOff = 0;            // Canny
 int cannyValue = 80;
 int contoursOnOff = 0;         // contours
 int minAreaRectOnOff = 0;      // minAreaRect
+int houghLOnOff = 0;           // Hough lines P
 int leftValue = 0;             // draw lines.
 int rightValue = 640;
 int topValue = 0;
@@ -275,16 +277,32 @@ int RunSingleCamera( PGRGuid guid ) {
             }
         }
 
-        /*
-        if (minAreaRectOnOff == 1) {
-            RotatedRect box = minAreaRect(image);
-            Point2f vertex[4];
-            box.points(vertex);
-
-            for (int x = 0; x < 4; x++) {
-                line(image, vertex[x], vertex[(x+1)%4], Scalar(100,200,211), 2, LINE_AA);
+        if (houghLOnOff == 1) {
+#if 0
+            // Standard Hough Line Transform ---
+            vector<Vec2f> lines;
+            HoughLines(image, lines, 1, CV_PI/180, 100, 0, 0 );
+            for (size_t i = 0; i < lines.size(); i++ ) {
+                float rho = lines[i][0], theta = lines[i][1];
+                Point pt1, pt2;
+                double a = cos(theta), b = sin(theta);
+                double x0 = a*rho, y0 = b*rho;
+                pt1.x = cvRound(x0 + 1000*(-b));
+                pt1.y = cvRound(y0 + 1000*(a));
+                pt2.x = cvRound(x0 - 1000*(-b));
+                pt2.y = cvRound(y0 - 1000*(a));
+                line( image, pt1, pt2, Scalar(0,0,255), 3, CV_AA);
             }
-        }*/
+#else
+            // Probabilistic Hough Line Transform---
+            vector<Vec4i> lines;
+            HoughLinesP(image, lines, 1, CV_PI/180, 50, 50, 10 );
+            for (size_t i = 0; i < lines.size(); i++ ) {
+                Vec4i l = lines[i];
+                line( image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 3, CV_AA);
+            }
+#endif
+        }
 
         imshow(win_title, image);
 
@@ -355,9 +373,11 @@ int main() {
     createTrackbar(cann_title, win_opencv, &cannyOnOff, 1);
     createTrackbar(cann_value, win_opencv, &cannyValue, 255, on_slider_cannyThresh);
     // contours
-    createTrackbar(cont_title, win_opencv, &contoursOnOff, 1);
+    //createTrackbar(cont_title, win_opencv, &contoursOnOff, 1);
     // minimal rect area
-    createTrackbar(rect_title, win_opencv, &minAreaRectOnOff, 1);
+    //createTrackbar(rect_title, win_opencv, &minAreaRectOnOff, 1);
+    // Hough lines P
+    createTrackbar(line_title, win_opencv, &houghLOnOff, 1);
     // image region
     createTrackbar(line_left,  win_title,   &leftValue,      640);
     createTrackbar(line_right, win_title,   &rightValue,     640);
