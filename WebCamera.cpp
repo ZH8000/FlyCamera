@@ -108,61 +108,9 @@ int main() {
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
     createTrackbar(tess_title, win_opencv, &ocrOnOff, 1, on_slider_ocrOnOff);
 
-    setMouseCallback(win_title, mouse_callback);
-
-    /*
-    while (char(waitKey(1)) != 'q' && cap.isOpened()) {
-        calibrateParams();
-
-        Mat frame;
-        cap >> frame;
-        if (frame.empty()) {
-            cout << "Video over" << endl;
-            break;
-        }
-        if (binaryOnOff == 1) {
-            threshold(frame, frame, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
-        }
-
-        Mat tmp;
-        Canny(frame, tmp, 50, 200, 3);
-
-        imshow(win_title, frame);
-<<<<<<< Updated upstream
-    }*/
-=======
-        imshow("test", tmp);
-    }
->>>>>>> Stashed changes
-
     return 0;
 }
 
-static void mouse_callback(int event, int x, int y, int, void *) {
-    if (event == EVENT_LBUTTONDOWN) {
-        ldown = true;
-        corner1.x = x;
-        corner1.y = y;
-    }
-    if (event == EVENT_LBUTTONUP) {
-        lup = true;
-        corner2.x = x;
-        corner2.y = y;
-    }
-    if (ldown == true && lup == false) {
-        moving.x = x;
-        moving.y = y;
-    }
-    if (ldown == true && lup == true) {
-        box.width = abs(corner1.x - corner2.x);
-        box.height = abs(corner1.y - corner2.y);
-        box.x = min(corner1.x, corner2.x);
-        box.y = min(corner1.y, corner2.y);
-
-        ldown = false;
-        lup = false;
-    }
-}
 // GET CAP PARAMS -start----------------------
 /*
 void getCapParams() {
