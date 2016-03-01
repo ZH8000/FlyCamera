@@ -39,6 +39,8 @@ const char* cann_title = "Canny 測邊 + 尋找輪廓";
 const char* cann_value = "Canny 閥值";
 const char* cont_title = "Contour 輪廓 Off/On";
 const char* rect_title = "最小矩形 包圍輪廓 Off/On";
+const char* open_title = "開運算";
+const char* clos_title = "閉運算";
 const char* line_left = "左邊界";
 const char* line_right = "右邊界";
 const char* line_top = "上邊界";
@@ -63,6 +65,8 @@ int cannyValue = 80;
 int contoursOnOff = 0;         // contours
 int minAreaRectOnOff = 0;      // minAreaRect
 int leftValue = 0;             // draw lines.
+int openingOnOff = 0;          // Opening Operation
+int closingOnOff = 0;          // Closing Operation
 int rightValue = 640;
 int topValue = 0;
 int bottomValue = 480;
@@ -222,6 +226,11 @@ int RunSingleCamera( PGRGuid guid ) {
         if (binaryOnOff == 1) {
             Mat origImage = image.clone();
             threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
+
+            int elementSize = 3;
+            Mat element = getStructuringElement( MORPH_RECT, Size(2*elementSize+1, 2* elementSize+1), 
+                                                 Point(elementSize, elementSize));
+            //morphologyEx( image, image, MORPH_OPEN, element );
         }
 
         if (cannyOnOff == 1) {
@@ -358,6 +367,9 @@ int main() {
     createTrackbar(cont_title, win_opencv, &contoursOnOff, 1);
     // minimal rect area
     createTrackbar(rect_title, win_opencv, &minAreaRectOnOff, 1);
+    // opening and closing
+    createTrackbar(open_title, win_opencv, &openingOnOff, 1);
+    createTrackbar(clos_title, win_opencv, &closingOnOff, 1);
     // image region
     createTrackbar(line_left,  win_title,   &leftValue,      640);
     createTrackbar(line_right, win_title,   &rightValue,     640);
