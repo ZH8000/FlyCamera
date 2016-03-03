@@ -113,9 +113,28 @@ int main(int /*argc*/, char** /*argv*/) {
             PrintError( error );
             return -1;
         }
-
         PrintCameraInfo(&camInfo); 
 
+        // Set all cameras to a specific mode and frame rate so they
+        // can be synchronized
+        error = ppCameras[i]->SetVideoModeAndFrameRate( 
+            VIDEOMODE_1280x960Y8, 
+            FRAMERATE_60 );
+        if ( error != PGRERROR_OK ) {
+            PrintError( error );
+            cout << "Error starting cameras. " << endl;
+            cout << "This example requires cameras to be able to set to 1280x960 Y8 at 60fps. " << endl;
+            cout << "If your camera does not support this mode, please edit the source code and recompile the application. " << endl;
+            cout << "Press Enter to exit. " << endl;
+
+            cin.ignore();
+            return -1;
+        }
+
+        stringstream ss;
+        ss << camInfo.serialNumber;
+        namedWindow(ss.str());
+        /*
         serialNs.push_back(camInfo.serialNumber);
 
         stringstream ss;
@@ -128,9 +147,23 @@ int main(int /*argc*/, char** /*argv*/) {
 
         std::thread t(RunSingleCamera, guid, camInfo.serialNumber);
         t.detach();
+        */
+    }
+
+    error = Camera::StartSyncCapture( numCameras, (const Camera**)ppCameras );
+    if (error != PGRERROR_OK) {
+        PrintError( error );
+        cout << "Error starting cameras. " << endl;
+        cout << "This example requires cameras to be able to set to 640x480 Y8 at 30fps. " << endl;
+        cout << "If your camera does not support this mode, please edit the source code and recompile the application. " << endl;
+        cout << "Press Enter to exit. " << endl;
+
+        cin.ignore();
+        return -1;
     }
 
     char c;
+    int count = 0;
     while ( true ) {
         c = waitKey(20);
 
@@ -143,6 +176,31 @@ int main(int /*argc*/, char** /*argv*/) {
             }
             delete [] ppCameras;
             return 0;
+        }
+
+        for ( unsigned int x = 0; x < numCameras; x++) {
+	        CameraInfo camInfo;
+            ppCameras[x]->GetCameraInfo( &camInfo );
+
+            Image rawImage;
+            error = ppCameras[x]->RetrieveBuffer( &rawImage);
+            if ( error != PGRERROR_OK ) {
+                PrintError( error );
+            }
+
+            Image rgbImage;
+            rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
+
+            // convert to OpenCV Mat
+            unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
+            Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
+
+            stringstream ss;
+            ss << camInfo.serialNumber;
+            imshow(ss.str(), image);
+
+            TimeStamp timestamp = rawImage.GetTimeStamp();
+            cout << "Cam " << x << " - Frame " << (count++) << " - TimeStamp [" << timestamp.cycleSeconds << " " << timestamp.cycleCount << "]" << endl;
         }
     }
 
