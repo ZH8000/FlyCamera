@@ -174,7 +174,7 @@ int RunSingleCamera( PGRGuid guid, unsigned int serialNumber ) {
         // convert to OpenCV Mat
         unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
-
+    
         stringstream ss;
         ss << serialNumber;
         imshow(ss.str(), image);

@@ -227,10 +227,24 @@ int RunSingleCamera( PGRGuid guid ) {
             Mat origImage = image.clone();
             threshold(origImage, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
 
+            //int elementSize = 3;
+            //Mat element = getStructuringElement( MORPH_RECT, Size(2*elementSize+1, 2* elementSize+1), 
+            //                                     Point(elementSize, elementSize));
+            //morphologyEx( image, image, MORPH_OPEN, element );
+        }
+
+        if (openingOnOff == 1) {
             int elementSize = 3;
             Mat element = getStructuringElement( MORPH_RECT, Size(2*elementSize+1, 2* elementSize+1), 
                                                  Point(elementSize, elementSize));
-            //morphologyEx( image, image, MORPH_OPEN, element );
+            morphologyEx( image, image, MORPH_OPEN, element );
+        }
+
+        if (closingOnOff == 1) {
+            int elementSize = 3;
+            Mat element = getStructuringElement( MORPH_RECT, Size(2*elementSize+1, 2* elementSize+1), 
+                                                 Point(elementSize, elementSize));
+            morphologyEx( image, image, MORPH_CLOSE, element );
         }
 
         if (cannyOnOff == 1) {
