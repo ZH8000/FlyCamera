@@ -148,8 +148,15 @@ int main(int /*argc*/, char** /*argv*/) {
         std::thread t(RunSingleCamera, guid, camInfo.serialNumber);
         t.detach();
         */
+        // Start capturing images
+        error = ppCameras[i]->StartCapture();
+        if (error != PGRERROR_OK) {
+            PrintError( error );
+            return -1;
+        }
     }
 
+# if 0
     error = Camera::StartSyncCapture( numCameras, (const Camera**)ppCameras );
     if (error != PGRERROR_OK) {
         PrintError( error );
@@ -161,6 +168,7 @@ int main(int /*argc*/, char** /*argv*/) {
         cin.ignore();
         return -1;
     }
+# endif
 
     char c;
     int count = 0;
@@ -179,6 +187,7 @@ int main(int /*argc*/, char** /*argv*/) {
         }
 
         for ( unsigned int x = 0; x < numCameras; x++) {
+
 	        CameraInfo camInfo;
             ppCameras[x]->GetCameraInfo( &camInfo );
 

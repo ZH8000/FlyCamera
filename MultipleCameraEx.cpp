@@ -128,8 +128,8 @@ int main(int /*argc*/, char** /*argv*/)
         if (error != PGRERROR_OK)
         {
             PrintError( error );
-            cout << "Error starting cameras. " << endl;
-			cout << "This example requires cameras to be able to set to 640x480 Y8 at 30fps. " << endl;
+            cout << "Error starting cameras. 1" << endl;
+			cout << "This example requires cameras to be able to set to 1280x960 Y8 at 30fps. " << endl;
             cout << "If your camera does not support this mode, please edit the source code and recompile the application. " << endl;
             cout << "Press Enter to exit. " << endl;
 			
@@ -142,8 +142,8 @@ int main(int /*argc*/, char** /*argv*/)
     if (error != PGRERROR_OK)
     {
         PrintError( error );
-			cout << "Error starting cameras. " << endl;
-			cout << "This example requires cameras to be able to set to 640x480 Y8 at 30fps. " << endl;
+			cout << "Error starting cameras. 2" << endl;
+			cout << "This example requires cameras to be able to set to 1280x480 Y8 at 30fps. " << endl;
             cout << "If your camera does not support this mode, please edit the source code and recompile the application. " << endl;
             cout << "Press Enter to exit. " << endl;
 		
