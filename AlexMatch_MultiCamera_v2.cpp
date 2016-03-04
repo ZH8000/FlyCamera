@@ -63,9 +63,9 @@ const char* bina_title = "影像二元化 Off/On";
 const char* binv_title = "影像二元化反轉 Off/On";
 const char* bina_max = "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
 const char* bina_thresh = "影像二元化閥值";            // binarization thresh will between 0 ~ 150
-const char* blur_title = "高斯模糊 Off/On";
-const char* blur_value = "高斯模糊 Kernel 大小";
-const char* succ_matches = "辦別成功最低Match值";
+// const char* blur_title = "高斯模糊 Off/On";
+// const char* blur_value = "高斯模糊 Kernel 大小";
+// const char* succ_matches = "辦別成功最低Match值";
 // const char* tess_title = "單張文字辨識 trigger";
 
 void on_slider_exposureOnOff(int, void*);  // exposure
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     createTrackbar(binv_title, win_opencv, &binaryInvOnOff, 1);
     createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
-    createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
+    // createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
     // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
 
     for (unsigned int i=0; i < numCameras; i++) {
@@ -217,6 +217,7 @@ void Match(Mat& sample, int idx) {
     cout << endl;
 }
 
+
 void getCameraProp(Camera* cam) {
     const int k_numImages = 10;
     FlyCapture2::Error error;
@@ -299,7 +300,7 @@ int RunSingleCamera( PGRGuid guid ) {
         getCameraProp(&cam);
 
         c = waitKey(30);
-        if (c == 'q') {
+        if (c == 27) {
             cam.StopCapture();
             cam.Disconnect();
             delete &cam;

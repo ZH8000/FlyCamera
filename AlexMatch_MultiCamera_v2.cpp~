@@ -63,9 +63,9 @@ const char* bina_title = "影像二元化 Off/On";
 const char* binv_title = "影像二元化反轉 Off/On";
 const char* bina_max = "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
 const char* bina_thresh = "影像二元化閥值";            // binarization thresh will between 0 ~ 150
-const char* blur_title = "高斯模糊 Off/On";
-const char* blur_value = "高斯模糊 Kernel 大小";
-const char* succ_matches = "辦別成功最低Match值";
+// const char* blur_title = "高斯模糊 Off/On";
+// const char* blur_value = "高斯模糊 Kernel 大小";
+// const char* succ_matches = "辦別成功最低Match值";
 // const char* tess_title = "單張文字辨識 trigger";
 
 void on_slider_exposureOnOff(int, void*);  // exposure
@@ -299,10 +299,10 @@ int RunSingleCamera( PGRGuid guid ) {
         getCameraProp(&cam);
 
         c = waitKey(30);
-        if (c == 'q') {
+        if (c == 27) {
             cam.StopCapture();
             cam.Disconnect();
-            delete *cam;
+            delete &cam;
             return 0;
         }
 
