@@ -16,6 +16,8 @@
 #include <tesseract/baseapi.h>
 #include <tesseract/strngs.h>
 
+#include "CommonFlySDK.hpp"
+
 using namespace std;
 using namespace cv;
 using namespace FlyCapture2;
@@ -86,11 +88,12 @@ void PrintError( FlyCapture2::Error error ) {
 void getCameraProp(Camera*);
 int RunSingleCamera( PGRGuid guid );
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     cout << "Press 'q' to quit" << endl;
     cout << "Press 's' to start sampling" << endl;
     cout << "Press 'r' to reset sample" << endl;
+
+    CommonFlySDK sdk;
 
     FlyCapture2::Error error;
     BusManager busMgr;
@@ -120,14 +123,63 @@ int main(int argc, char** argv)
     // createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
     // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
 
+
+    Camera** ppCameras = new Camera*[numCameras];
+
+    // Connect to all detected cameras and attempt to set them to
+    // a common video mode and frame rate
     for (unsigned int i=0; i < numCameras; i++) {
+        ppCameras[i] = new Camera();
+
         PGRGuid guid;
         error = busMgr.GetCameraFromIndex(i, &guid);
         if (error != PGRERROR_OK) {
             PrintError( error );
             return -1; 
         }
-        RunSingleCamera( guid );
+        //RunSingleCamera( guid );
+        // 1. Connect to a camera
+        error = ppCameras[i]->Connect( &guid );
+        if (error != PGRERROR_OK) {
+            PrintError( error );
+            return -1;
+        }
+
+        // 2. Get the camera information
+        CameraInfo camInfo;
+        error = ppCameras[i]->GetCameraInfo( &camInfo );
+        if (error != PGRERROR_OK) {
+            PrintError( error );
+            return -1;
+        }
+        sdk.PrintCameraInfo( &camInfo );
+
+        // 3. Set all cameras to a specific mode and frame rate so they can be synchronized
+        error = ppCameras[i]->SetVideoModeAndFrameRate( 
+            VIDEOMODE_1280x960Y8, 
+            FRAMERATE_60 );
+        if ( error != PGRERROR_OK ) {
+            PrintError( error );
+            cout << "Error starting cameras. " << endl;
+            cout << "This example requires cameras to be able to set to 1280x960 Y8 at 60fps. " << endl;
+            cout << "If your camera does not support this mode, please edit the source code and recompile the application. " << endl;
+            cout << "Press Enter to exit. " << endl;
+
+            cin.ignore();
+            return -1;
+        }
+
+        // 4. show window(s)
+        stringstream ss;
+        ss << camInfo.serialNumber;
+        namedWindow(ss.str());
+
+        // 5. Start capturing images
+        error = ppCameras[i]->StartCapture();
+        if (error != PGRERROR_OK) {
+            PrintError( error );
+            return -1;
+        }
     }   
 
     return 0;
@@ -304,6 +356,7 @@ int RunSingleCamera( PGRGuid guid ) {
             cam.StopCapture();
             cam.Disconnect();
             delete &cam;
+            destroyAllWindows();
             return 0;
         }
 

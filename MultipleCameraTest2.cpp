@@ -43,8 +43,6 @@ int main(int /*argc*/, char** /*argv*/) {
         return -1;
     }
 
-    vector<unsigned int> serialNs;
-
     cout << "Number of cameras detected: " << numCameras << endl; 
 
     if ( numCameras < 1 ) {
@@ -102,20 +100,7 @@ int main(int /*argc*/, char** /*argv*/) {
         stringstream ss;
         ss << camInfo.serialNumber;
         namedWindow(ss.str());
-        /*
-        serialNs.push_back(camInfo.serialNumber);
 
-        stringstream ss;
-        ss << camInfo.serialNumber;
-        namedWindow(ss.str());
-        //char* buttonName = "Bt1";
-        //createButton(buttonName, buttonCallback, NULL, CV_PUSH_BUTTON, 0);
-
-		initCamera( ppCameras[i] );
-
-        std::thread t(RunSingleCamera, guid, camInfo.serialNumber);
-        t.detach();
-        */
         // Start capturing images
         error = ppCameras[i]->StartCapture();
         if (error != PGRERROR_OK) {
@@ -182,47 +167,3 @@ int main(int /*argc*/, char** /*argv*/) {
 
     return 0;
 }
-
-/*
-int RunSingleCamera( PGRGuid guid, unsigned int serialNumber ) {
-    cout << "RunSingleCamera..." << serialNumber  << endl;
-
-    Camera cam;
-    FlyCapture2::Error error;
-
-    error = cam.Connect( &guid );
-    if ( error != PGRERROR_OK ) {
-        PrintError( error );
-        return -1;
-    }
-
-    error = cam.StartCapture();
-    if ( error != PGRERROR_OK ) {
-        PrintError( error );
-        return -1;
-    }
-
-    Image rawImage;
-
-    while( true ) {
-        error = cam.RetrieveBuffer( &rawImage );
-        if ( error != PGRERROR_OK ) {
-            PrintError( error );
-        }
-    
-        Image rgbImage;
-        rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
-    
-        // convert to OpenCV Mat
-        unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
-        Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
-
-        stringstream ss;
-        ss << serialNumber;
-        imshow(ss.str(), image);
-
-        //TimeStamp timestamp = rawImage.GetTimeStamp();
-        //cout << "Camera " << ss.str() << " - TimeStamp [" << timestamp.cycleSeconds << " " << timestamp.cycleCount << "]" << endl;
-    }
-}
-*/
