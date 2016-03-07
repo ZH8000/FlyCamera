@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <list>
+#include <map>
 #include <sstream>
 #include <string>
 
@@ -17,6 +18,7 @@
 #include <tesseract/strngs.h>
 
 #include "CommonFlySDK.hpp"
+#include "CameraProp.hpp"
 
 using namespace std;
 using namespace cv;
@@ -48,6 +50,7 @@ int successMatches = 100;      // AKAZE matches
 // int ocrOnOff = 0;              // OCR
 
 Camera cam;
+map<unsigned int, CameraProp> propMap;
 Mat sampleImage;
 list<Mat> sampleImages;
 const int sampleImagesSize = 10;
@@ -85,8 +88,11 @@ void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
 }
 
+/*
 void getCameraProp(Camera*);
 int RunSingleCamera( PGRGuid guid );
+*/
+void createTrackbars(unsigned int id, CameraProp *prop);
 
 int main(int argc, char** argv) {
     cout << "Press 'q' to quit" << endl;
@@ -105,11 +111,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    namedWindow(win_title, WINDOW_NORMAL);
-    //resizeWindow(win_title, 1024, 768);
-    namedWindow(win_setting, WINDOW_NORMAL);
-    namedWindow(win_opencv, WINDOW_NORMAL);
-
+/*
     createTrackbar(expo_title, win_setting, &exposureOnOff, 1, on_slider_exposureOnOff);
     createTrackbar(expo_value, win_setting, &exposureValue, 1023, on_slider_exposureValue);
     createTrackbar(shar_title, win_setting, &sharpnessOnOff, 1, on_slider_sharpnessOnOff);
@@ -122,6 +124,7 @@ int main(int argc, char** argv) {
     createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
     // createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
     // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
+*/
 
 
     Camera** ppCameras = new Camera*[numCameras];
@@ -170,9 +173,11 @@ int main(int argc, char** argv) {
         }
 
         // 4. show window(s)
-        stringstream ss;
-        ss << camInfo.serialNumber;
-        namedWindow(ss.str());
+        createTrackbars(camInfo.serialNumber, &propMap[camInfo.serialNumber]);
+        
+//        stringstream ss;
+//        ss << camInfo.serialNumber;
+//        namedWindow(ss.str());
 
         // 5. Start capturing images
         error = ppCameras[i]->StartCapture();
@@ -180,7 +185,31 @@ int main(int argc, char** argv) {
             PrintError( error );
             return -1;
         }
-    }   
+    }
+    
+    char c;
+    int count = 0;
+    while ( true ) {
+        c = waitKey(20);
+        // clean memory and close all windows
+        if ( c == 27) {
+            for (unsigned int x = 0; x < numCameras; x++) {
+                destroyAllWindows();
+                ppCameras[x]->StopCapture();
+                ppCameras[x]->Disconnect();
+                delete ppCameras[x];
+            }
+            delete [] ppCameras;
+            return 0;
+        }
+        
+        for ( unsigned int x = 0; x < numCameras; x++) {
+            CameraInfo camInfo;
+            ppCameras[x]->GetCameraInfo( &camInfo );
+//            getCameraProp(ppCameras[x]);
+            propMap[camInfo.serialNumber] = sdk.getCameraProp(ppCameras[x], camInfo.serialNumber);;
+        }
+    }
 
     return 0;
 }
@@ -269,13 +298,68 @@ void Match(Mat& sample, int idx) {
     cout << endl;
 }
 
+void createTrackbars(unsigned int id, CameraProp *prop) {
 
+    stringstream ss;
+
+    // 1. for Mat image
+    ss.str(std::string());
+    ss << win_title << id;
+    namedWindow(ss.str(), WINDOW_NORMAL);
+
+    // 2. for Camera settings
+    ss.str(std::string());
+    ss << win_setting << id;
+    namedWindow(ss.str(), WINDOW_NORMAL);
+    int test = 999;
+    createTrackbar(expo_title, ss.str(), &(prop->exposureOnOff), 1, on_slider_exposureOnOff, (void*)(&test));
+    createTrackbar(expo_value, ss.str(), &(prop->exposureValue), 1023, on_slider_exposureValue);
+    createTrackbar(shar_title, ss.str(), &(prop->sharpnessOnOff), 1, on_slider_sharpnessOnOff);
+    createTrackbar(shar_value, ss.str(), &(prop->sharpnessValue), 4095, on_slider_sharpnessValue);
+    createTrackbar(shut_title, ss.str(), &(prop->shutterOnOff), 1, on_slider_shutterOnOff);
+    createTrackbar(shut_value, ss.str(), &(prop->shutterValue), 1590, on_slider_shutterValue);
+
+    // 3. for OpenCV features
+    ss.str(std::string());
+    ss << win_opencv << id;
+    namedWindow(ss.str(), WINDOW_NORMAL);
+    createTrackbar(bina_title,  ss.str(), &(prop->binaryOnOff), 1);
+    createTrackbar(binv_title,  ss.str(), &(prop->binaryInvOnOff), 1);
+    createTrackbar(bina_max,    ss.str(), &(prop->binaryMax), 150, on_slider_binaryMax);
+    createTrackbar(bina_thresh, ss.str(), &(prop->binaryThresh), 150, on_slider_binaryThresh);
+    // createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
+    // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
+    
+    
+    /*
+    createTrackbar(expo_title, win_setting, &exposureOnOff, 1, on_slider_exposureOnOff);
+    createTrackbar(expo_value, win_setting, &exposureValue, 1023, on_slider_exposureValue);
+    createTrackbar(shar_title, win_setting, &sharpnessOnOff, 1, on_slider_sharpnessOnOff);
+    createTrackbar(shar_value, win_setting, &sharpnessValue, 4095, on_slider_sharpnessValue);
+    createTrackbar(shut_title, win_setting, &shutterOnOff, 1, on_slider_shutterOnOff);
+    createTrackbar(shut_value, win_setting, &shutterValue, 1590, on_slider_shutterValue);
+    createTrackbar(bina_title, win_opencv, &binaryOnOff, 1);
+    createTrackbar(binv_title, win_opencv, &binaryInvOnOff, 1);
+    createTrackbar(bina_max, win_opencv, &binaryMax, 150, on_slider_binaryMax);
+    createTrackbar(bina_thresh, win_opencv, &binaryThresh, 150, on_slider_binaryThresh);
+    // createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
+    // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
+    */
+}
+/*
 void getCameraProp(Camera* cam) {
-    const int k_numImages = 10;
     FlyCapture2::Error error;
+    CameraInfo camInfo;
+    error = cam->GetCameraInfo( &camInfo );
+    if (error != PGRERROR_OK) {
+        PrintError( error );
+    }
+    
+    CameraProp prop;
 
     Property camProp;
     PropertyInfo camPropInfo;
+    
     for (unsigned int x = 0; x < sk_numProps; x++) {
         const PropertyType k_currPropType = (PropertyType)x;
         camProp.type = k_currPropType;
@@ -287,10 +371,20 @@ void getCameraProp(Camera* cam) {
             continue;
         }
         if (BRIGHTNESS) {
+            //---
+            prop.brightnessOnOff = camProp.autoManualMode;
+            prop.brightnessValue = camProp.valueA;
+            cout << camInfo.serialNumber << " BRIGHTNESS " << camProp.valueA << endl;
+            
         } else
         if (camPropInfo.type == AUTO_EXPOSURE) {
             exposureOnOff = camProp.autoManualMode;
             exposureValue = camProp.valueA;
+            
+            //---
+            prop.exposureOnOff = camProp.autoManualMode;
+            prop.exposureValue = camProp.valueA;
+            cout << camInfo.serialNumber << " AUTO_EXPOSURE " << camProp.valueA << endl;
 
             setTrackbarPos(expo_title, win_setting, exposureOnOff);
             setTrackbarPos(expo_value, win_setting, exposureValue);
@@ -298,28 +392,55 @@ void getCameraProp(Camera* cam) {
         if (camPropInfo.type == SHARPNESS) {
             sharpnessOnOff = camProp.autoManualMode;
             sharpnessValue = camProp.valueA;
+            
+            //---
+            prop.sharpnessOnOff = camProp.autoManualMode;
+            prop.sharpnessValue = camProp.valueA;
+            cout << camInfo.serialNumber << " SHARPNESS " << camProp.valueA << endl;
 
             setTrackbarPos(shar_title, win_setting, sharpnessOnOff);
             setTrackbarPos(shar_value, win_setting, sharpnessValue);
         } else
         if (camPropInfo.type == GAMMA) {
+            //---
+            prop.gammaOnOff = camProp.autoManualMode;
+            prop.gammaValue = camProp.valueA;
+            cout << camInfo.serialNumber << " GAMMA " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == SHUTTER) {
             shutterOnOff = camProp.autoManualMode;
             shutterValue = camProp.valueA;
+            
+            //---
+            prop.shutterOnOff = camProp.autoManualMode;
+            prop.shutterValue = camProp.valueA;
+            cout << camInfo.serialNumber << " SHUTTER " << camProp.valueA << endl;
 
             setTrackbarPos(shut_title, win_setting, shutterOnOff);
             setTrackbarPos(shut_value, win_setting, shutterValue);
         } else
         if (camPropInfo.type == GAIN) {
+            //---
+            prop.gainOnOff = camProp.autoManualMode;
+            prop.gainValue = camProp.valueA;
+            cout << camInfo.serialNumber << " GAIN " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == FRAME_RATE) {
+            //---
+            prop.frameOnOff = camProp.autoManualMode;
+            prop.frameValue = camProp.valueA;
+            cout << camInfo.serialNumber << " FRAME_RATE " << camProp.valueA << endl;
         } else 
         if (camPropInfo.type == TEMPERATURE) {
+            cout << camInfo.serialNumber << " TEMPERATURE " << camProp.valueA << " K" << endl;
         }
     }
-}
 
+    propMap[camInfo.serialNumber] = prop;
+}
+*/
+
+/*
 int RunSingleCamera( PGRGuid guid ) {
     const int k_numImages = 10;
 
@@ -446,6 +567,7 @@ int RunSingleCamera( PGRGuid guid ) {
     }
     return 0;
 }
+*/
 
 void setParamAutoOnOff(PropertyType type, int onOff) {
     FlyCapture2::Error error;
@@ -485,7 +607,13 @@ void setParamValue(PropertyType type, int value) {
 }
 
 // EXPOSURE -start----------------------------
-void on_slider_exposureOnOff(int, void*) {
+void on_slider_exposureOnOff(int, void* userdata) {
+
+//    int val = *((unsigned int *) &userdata);
+      int val = *((int*) userdata);
+//    int val = *((int *) userdata);
+
+    cout << "IDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDID " << val << endl;
     setParamAutoOnOff(AUTO_EXPOSURE, exposureOnOff);
 }
 

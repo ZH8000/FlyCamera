@@ -100,3 +100,66 @@ int CommonFlySDK::initCamera( Camera *cam) {
         cout << "Format7 settings are not valid" << endl;
     }
 }
+
+CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) {
+    const unsigned int sk_numProps = 18;
+    FlyCapture2::Error error;
+    
+    CameraProp prop;
+
+    Property camProp;
+    PropertyInfo camPropInfo;
+    
+    for (unsigned int x = 0; x < sk_numProps; x++) {
+        const PropertyType k_currPropType = (PropertyType)x;
+        camProp.type = k_currPropType;
+        camPropInfo.type = k_currPropType;
+
+        FlyCapture2::Error getPropErr = cam->GetProperty( &camProp );
+        FlyCapture2::Error getPropInfoErr = cam->GetPropertyInfo( &camPropInfo );
+        if ( getPropErr != PGRERROR_OK || getPropInfoErr != PGRERROR_OK ||  camPropInfo.present == false) {
+            continue;
+        }
+        if (BRIGHTNESS) {
+            prop.brightnessOnOff = camProp.autoManualMode;
+            prop.brightnessValue = camProp.valueA;
+//            cout << serialNumber << " BRIGHTNESS " << camProp.valueA << endl;
+            
+        } else
+        if (camPropInfo.type == AUTO_EXPOSURE) {
+            prop.exposureOnOff = camProp.autoManualMode;
+            prop.exposureValue = camProp.valueA;
+//            cout << serialNumber << " AUTO_EXPOSURE " << camProp.valueA << endl;
+        } else
+        if (camPropInfo.type == SHARPNESS) {
+            prop.sharpnessOnOff = camProp.autoManualMode;
+            prop.sharpnessValue = camProp.valueA;
+//            cout << serialNumber << " SHARPNESS " << camProp.valueA << endl;
+        } else
+        if (camPropInfo.type == GAMMA) {
+            prop.gammaOnOff = camProp.autoManualMode;
+            prop.gammaValue = camProp.valueA;
+//            cout << serialNumber << " GAMMA " << camProp.valueA << endl;
+        } else
+        if (camPropInfo.type == SHUTTER) {
+            prop.shutterOnOff = camProp.autoManualMode;
+            prop.shutterValue = camProp.valueA;
+//            cout << serialNumber << " SHUTTER " << camProp.valueA << endl;
+        } else
+        if (camPropInfo.type == GAIN) {
+            prop.gainOnOff = camProp.autoManualMode;
+            prop.gainValue = camProp.valueA;
+//            cout << serialNumber << " GAIN " << camProp.valueA << endl;
+        } else
+        if (camPropInfo.type == FRAME_RATE) {
+            prop.frameOnOff = camProp.autoManualMode;
+            prop.frameValue = camProp.valueA;
+//            cout << serialNumber << " FRAME_RATE " << camProp.valueA << endl;
+        } else 
+        if (camPropInfo.type == TEMPERATURE) {
+//            cout << serialNumber << " TEMPERATURE " << camProp.valueA << " K" << endl;
+        }
+    }
+    
+    return prop;
+}

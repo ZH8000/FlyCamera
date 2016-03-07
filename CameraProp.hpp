@@ -1,7 +1,7 @@
 #ifndef CAMERAPROP_H
 #define CAMERAPROP_H
 
-struct CamProp {
+struct CameraProp {
     // BRIGHTNESS
     int brightnessOnOff;
     int brightnessValue;
@@ -13,6 +13,10 @@ struct CamProp {
     // SHARPNESS
     int sharpnessOnOff;
     int sharpnessValue;
+    
+    // GAMMA
+    int gammaOnOff;
+    int gammaValue;
 
     // SHUTTER
     int shutterOnOff;
@@ -25,6 +29,12 @@ struct CamProp {
     // FRAME RATE
     int frameOnOff;
     int frameValue;
+    
+    // BINARY(INV) - OpenCV
+    int binaryOnOff;
+    int binaryInvOnOff;
+    int binaryMax;
+    int binaryThresh;
 };
 
 #endif
