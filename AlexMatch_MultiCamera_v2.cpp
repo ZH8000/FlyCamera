@@ -298,6 +298,7 @@ void Match(Mat& sample, int idx) {
     cout << endl;
 }
 
+int test = 999;
 void createTrackbars(unsigned int id, CameraProp *prop) {
 
     stringstream ss;
@@ -311,9 +312,9 @@ void createTrackbars(unsigned int id, CameraProp *prop) {
     ss.str(std::string());
     ss << win_setting << id;
     namedWindow(ss.str(), WINDOW_NORMAL);
-    int test = 999;
-    createTrackbar(expo_title, ss.str(), &(prop->exposureOnOff), 1, on_slider_exposureOnOff, (void*)(&test));
-    createTrackbar(expo_value, ss.str(), &(prop->exposureValue), 1023, on_slider_exposureValue);
+    
+    createTrackbar(expo_title, ss.str(), &(prop->exposureOnOff), 1, on_slider_exposureOnOff, prop);
+    createTrackbar(expo_value, ss.str(), &(prop->exposureValue), 1023, on_slider_exposureValue, prop);
     createTrackbar(shar_title, ss.str(), &(prop->sharpnessOnOff), 1, on_slider_sharpnessOnOff);
     createTrackbar(shar_value, ss.str(), &(prop->sharpnessValue), 4095, on_slider_sharpnessValue);
     createTrackbar(shut_title, ss.str(), &(prop->shutterOnOff), 1, on_slider_shutterOnOff);
@@ -576,6 +577,7 @@ void setParamAutoOnOff(PropertyType type, int onOff) {
     error = cam.GetProperty(&prop);
     if ( error != PGRERROR_OK) {
         PrintError( error );
+        cout << "setParamAutoOnOff error1" << endl;
     }
     prop.absControl = false;
     prop.onOff = true;
@@ -583,6 +585,7 @@ void setParamAutoOnOff(PropertyType type, int onOff) {
     error = cam.SetProperty(&prop, false);
     if ( error != PGRERROR_OK ) {
         PrintError ( error );
+        cout << "setParamAutoOnOff error2" << endl;
     }
 }
 
@@ -608,18 +611,18 @@ void setParamValue(PropertyType type, int value) {
 
 // EXPOSURE -start----------------------------
 void on_slider_exposureOnOff(int, void* userdata) {
-
-//    int val = *((unsigned int *) &userdata);
-      int val = *((int*) userdata);
-//    int val = *((int *) userdata);
-
-    cout << "IDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDIDID " << val << endl;
-    setParamAutoOnOff(AUTO_EXPOSURE, exposureOnOff);
+//    int val = *((int*) userdata);
+//    CameraProp prop = *((CameraProp*) userdata);
+    setParamAutoOnOff(AUTO_EXPOSURE, ((CameraProp*)userdata)->exposureOnOff);
+    //cout << "AUTO_EXPOSURE on/off " << prop.exposureOnOff << endl;
+    cout << "AUTO_EXPOSURE on/off " << ((CameraProp*)userdata)->exposureOnOff << endl;
 }
 
-void on_slider_exposureValue(int, void*) {
-    if (exposureOnOff == 0) { // MANUAL mode
-        setParamValue(AUTO_EXPOSURE, exposureValue);
+void on_slider_exposureValue(int, void* userdata) {
+    cout << "adsfadfadsfadsf " << ((CameraProp*)userdata)->exposureOnOff << endl;
+    if (((CameraProp*)userdata)->exposureOnOff == 0) { // MANUAL mode
+        cout << "AUTO_EXPOSURE is on~~~~~~~~~~~~~~~~~~~~~`" << endl;
+//        setParamValue(AUTO_EXPOSURE, ((CameraProp*)userdata)->exposureValue);
     }
 }
 // EXPOSURE -end------------------------------

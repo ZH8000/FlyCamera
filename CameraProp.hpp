@@ -2,6 +2,9 @@
 #define CAMERAPROP_H
 
 struct CameraProp {
+    // Camera SN
+    unsigned int camSN;
+
     // BRIGHTNESS
     int brightnessOnOff;
     int brightnessValue;

@@ -110,6 +110,7 @@ CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) 
     Property camProp;
     PropertyInfo camPropInfo;
     
+    prop.camSN = serialNumber;
     for (unsigned int x = 0; x < sk_numProps; x++) {
         const PropertyType k_currPropType = (PropertyType)x;
         camProp.type = k_currPropType;
