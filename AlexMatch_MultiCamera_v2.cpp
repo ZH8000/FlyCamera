@@ -111,13 +111,14 @@ int main(int argc, char** argv) {
         }
         
         for ( unsigned int x = 0; x < numCameras; x++) {
+        
+            // 1. get camera's prop and update
             CameraInfo camInfo;
             ppCameras[x]->GetCameraInfo( &camInfo );
-//            getCameraProp(ppCameras[x]);
             propMap[camInfo.serialNumber] = sdk.getCameraProp(ppCameras[x], camInfo.serialNumber);
-            // TODO update trackbar
             updateTrackbars(ppCameras[x], &propMap[camInfo.serialNumber]);
-            
+
+            // 2. show image
             Image rawImage;
             error = ppCameras[x]->RetrieveBuffer( &rawImage);
             if ( error != PGRERROR_OK ) {
@@ -132,9 +133,8 @@ int main(int argc, char** argv) {
             Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
 
             stringstream ss;
-            ss << camInfo.serialNumber;
+            ss << win_title << camInfo.serialNumber;
             imshow(ss.str(), image);
-
         }
     }
 
@@ -237,13 +237,15 @@ void createTrackbars(unsigned int id, CameraProp *prop) {
     ss.str(std::string());
     ss << win_setting << id;
     namedWindow(ss.str(), WINDOW_NORMAL);
-    
+    // exposure
     createTrackbar(expo_title, ss.str(), &(prop->exposureOnOff), 1, on_slider_exposureOnOff, prop);
     createTrackbar(expo_value, ss.str(), &(prop->exposureValue), 1023, on_slider_exposureValue, prop);
-    createTrackbar(shar_title, ss.str(), &(prop->sharpnessOnOff), 1, on_slider_sharpnessOnOff);
-    createTrackbar(shar_value, ss.str(), &(prop->sharpnessValue), 4095, on_slider_sharpnessValue);
-    createTrackbar(shut_title, ss.str(), &(prop->shutterOnOff), 1, on_slider_shutterOnOff);
-    createTrackbar(shut_value, ss.str(), &(prop->shutterValue), 1590, on_slider_shutterValue);
+    // sharpness
+    createTrackbar(shar_title, ss.str(), &(prop->sharpnessOnOff), 1, on_slider_sharpnessOnOff, prop);
+    createTrackbar(shar_value, ss.str(), &(prop->sharpnessValue), 4095, on_slider_sharpnessValue, prop);
+    // shutter
+    createTrackbar(shut_title, ss.str(), &(prop->shutterOnOff), 1, on_slider_shutterOnOff, prop);
+    createTrackbar(shut_value, ss.str(), &(prop->shutterValue), 1590, on_slider_shutterValue, prop);
 
     // 3. for OpenCV features
     ss.str(std::string());
@@ -285,8 +287,7 @@ void updateTrackbars(Camera* camera, CameraProp* prop) {
         if (camPropInfo.type == AUTO_EXPOSURE) {
             prop->exposureOnOff = camProp.autoManualMode;
             prop->exposureValue = camProp.valueA;
-            cout << prop->camId << " AUTO_EXPOSURE " << prop->exposureOnOff << " " << prop->exposureValue << endl;
-            
+//            cout << prop->camId << " AUTO_EXPOSURE " << prop->exposureOnOff << " " << prop->exposureValue << endl;
             setTrackbarPos(expo_title, ss.str(), prop->exposureOnOff);
             setTrackbarPos(expo_value, ss.str(), prop->exposureValue);
         } else
@@ -294,6 +295,8 @@ void updateTrackbars(Camera* camera, CameraProp* prop) {
             prop->sharpnessOnOff = camProp.autoManualMode;
             prop->sharpnessValue = camProp.valueA;
 //            cout << prop->camId << " SHARPNESS " << camProp.valueA << endl;
+            setTrackbarPos(shar_title, ss.str(), prop->sharpnessOnOff);
+            setTrackbarPos(shar_value, ss.str(), prop->sharpnessValue);
         } else
         if (camPropInfo.type == GAMMA) {
             prop->gammaOnOff = camProp.autoManualMode;
@@ -304,6 +307,8 @@ void updateTrackbars(Camera* camera, CameraProp* prop) {
             prop->shutterOnOff = camProp.autoManualMode;
             prop->shutterValue = camProp.valueA;
 //            cout << prop->camId << " SHUTTER " << camProp.valueA << endl;
+            setTrackbarPos(shut_title, ss.str(), prop->shutterOnOff);
+            setTrackbarPos(shut_value, ss.str(), prop->shutterValue);
         } else
         if (camPropInfo.type == GAIN) {
             prop->gainOnOff = camProp.autoManualMode;
@@ -463,8 +468,6 @@ void setParamAutoOnOff(PropertyType type, int onOff, unsigned int camId) {
         }
         if (camInfo.serialNumber == camId) {
             cam = x;
-            
-            cout << "serial number " << camInfo.serialNumber << endl;
             break;
         }
     }
@@ -499,8 +502,6 @@ void setParamValue(PropertyType type, int value, unsigned int camId) {
         }
         if (camInfo.serialNumber == camId) {
             cam = x;
-            
-            cout << "serial number " << camInfo.serialNumber << endl;
             break;
         }
     }
@@ -527,11 +528,9 @@ void setParamValue(PropertyType type, int value, unsigned int camId) {
 // EXPOSURE -start----------------------------
 void on_slider_exposureOnOff(int, void* userdata) {
     setParamAutoOnOff(AUTO_EXPOSURE, ((CameraProp*)userdata)->exposureOnOff, ((CameraProp*)userdata)->camId);
-    //cout << "AUTO_EXPOSURE on/off " << ((CameraProp*)userdata)->exposureOnOff << endl;
 }
 
 void on_slider_exposureValue(int, void* userdata) {
-    cout << "adsfadfadsfadsf " << ((CameraProp*)userdata)->exposureOnOff << endl;
     if ( ((CameraProp*)userdata)->exposureOnOff == 0 ) { // MANUAL mode
         setParamValue(AUTO_EXPOSURE, ((CameraProp*)userdata)->exposureValue, ((CameraProp*)userdata)->camId);
     }
@@ -540,24 +539,24 @@ void on_slider_exposureValue(int, void* userdata) {
 
 // SHARPNESS -start---------------------------
 void on_slider_sharpnessOnOff(int, void* userdata) {
-    //setParamAutoOnOff(SHARPNESS, sharpnessOnOff);
+    setParamAutoOnOff(SHARPNESS, ((CameraProp*)userdata)->sharpnessOnOff, ((CameraProp*)userdata)->camId);
 }
 
 void on_slider_sharpnessValue(int, void* userdata) {
-    if (sharpnessOnOff == 0) { // MANUAL mode
-        setParamValue(SHARPNESS, sharpnessValue, ((CameraProp*)userdata)->camId);
+    if ( ((CameraProp*)userdata)->sharpnessOnOff == 0 ) { // MANUAL mode
+        setParamValue(SHARPNESS, ((CameraProp*)userdata)->sharpnessValue, ((CameraProp*)userdata)->camId);
     }
 }
 // SHARPNESS -end-----------------------------
 
 // SHUTTER -start-----------------------------
 void on_slider_shutterOnOff(int, void* userdata) {
-    //setParamAutoOnOff(SHUTTER, shutterOnOff);
+    setParamAutoOnOff(SHUTTER, ((CameraProp*)userdata)->shutterOnOff, ((CameraProp*)userdata)->camId);
 }
 
 void on_slider_shutterValue(int, void* userdata) {
-    if (shutterOnOff == 0) { // MANUAL mode
-        setParamValue(SHUTTER, shutterValue, ((CameraProp*)userdata)->camId);
+    if ( ((CameraProp*)userdata)->shutterOnOff == 0 ) { // MANUAL mode
+        setParamValue(SHUTTER, ((CameraProp*)userdata)->shutterValue, ((CameraProp*)userdata)->camId);
     }   
 }
 // SHUTTER -end-------------------------------
