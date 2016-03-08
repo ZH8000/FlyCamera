@@ -3,7 +3,7 @@
 
 struct CameraProp {
     // Camera SN
-    unsigned int camSN;
+    unsigned int camId;
 
     // BRIGHTNESS
     int brightnessOnOff;

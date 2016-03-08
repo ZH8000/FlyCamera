@@ -61,7 +61,7 @@ void CommonFlySDK::PrintFormat7Capabilities(Format7Info fmt7Info) {
 
 int CommonFlySDK::initCamera( Camera *cam) {
 	CameraInfo camInfo;
-	FlyCapture2::Error error;
+	//FlyCapture2::Error error;
 
 	const Mode k_fmt7Mode = MODE_0;
     const PixelFormat k_fmt7PixFmt = PIXEL_FORMAT_MONO8;
@@ -103,14 +103,13 @@ int CommonFlySDK::initCamera( Camera *cam) {
 
 CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) {
     const unsigned int sk_numProps = 18;
-    FlyCapture2::Error error;
     
     CameraProp prop;
 
     Property camProp;
     PropertyInfo camPropInfo;
     
-    prop.camSN = serialNumber;
+    prop.camId = serialNumber;
     for (unsigned int x = 0; x < sk_numProps; x++) {
         const PropertyType k_currPropType = (PropertyType)x;
         camProp.type = k_currPropType;
@@ -121,7 +120,7 @@ CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) 
         if ( getPropErr != PGRERROR_OK || getPropInfoErr != PGRERROR_OK ||  camPropInfo.present == false) {
             continue;
         }
-        if (BRIGHTNESS) {
+        if (camPropInfo.type == BRIGHTNESS) {
             prop.brightnessOnOff = camProp.autoManualMode;
             prop.brightnessValue = camProp.valueA;
 //            cout << serialNumber << " BRIGHTNESS " << camProp.valueA << endl;
@@ -163,4 +162,42 @@ CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) 
     }
     
     return prop;
+}
+
+void CommonFlySDK::setParamAutoOnOff(FlyCapture2::PropertyType type, int onOff, FlyCapture2::Camera *cam) {
+    Property prop;
+    prop.type = type;
+    error = cam->GetProperty(&prop);
+    if ( error != PGRERROR_OK) {
+        cout << "setParamAutoOnOff error1" << endl;
+        PrintError( error );
+    }
+    prop.absControl = false;
+    prop.onOff = true;
+    prop.autoManualMode = onOff; 
+    error = cam->SetProperty(&prop, false);
+    if ( error != PGRERROR_OK ) {
+        cout << "setParamAutoOnOff error2" << endl;
+        PrintError ( error );
+    }
+}
+
+void CommonFlySDK::setParamValue(FlyCapture2::PropertyType type, int value, FlyCapture2::Camera *cam) {
+    Property prop;
+    prop.type = type;
+    error = cam->GetProperty(&prop);
+    if ( error != PGRERROR_OK) {
+        cout << "setParamValue error1" << endl;
+        PrintError( error );
+    }
+
+    prop.absControl = false;
+    prop.onOff = true;
+    prop.autoManualMode = 0;
+    prop.valueA = value;
+    error = cam->SetProperty(&prop, false);
+    if ( error != PGRERROR_OK ) {
+        cout << "setParamValue error2" << endl;
+        PrintError( error );
+    }
 }
