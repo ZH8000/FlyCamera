@@ -37,7 +37,9 @@ struct CameraProp {
     int binaryOnOff;
     int binaryInvOnOff;
     int binaryMax;
+    int oldBinaryMax;
     int binaryThresh;
+    int oldBinaryThresh;
 };
 
 #endif

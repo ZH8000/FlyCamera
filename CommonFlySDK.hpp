@@ -15,7 +15,7 @@ class CommonFlySDK {
         void PrintError( FlyCapture2::Error error );
         void PrintFormat7Capabilities(FlyCapture2::Format7Info fmt7Info);
         int initCamera( FlyCapture2::Camera *cam);
-        CameraProp getCameraProp( FlyCapture2::Camera *cam, unsigned int serialNumber);
+        void getCameraProp( FlyCapture2::Camera *cam, unsigned int serialNumber, CameraProp* prop);
         void setParamAutoOnOff(FlyCapture2::PropertyType type, int onOff, FlyCapture2::Camera *cam);
         void setParamValue(FlyCapture2::PropertyType type, int value, FlyCapture2::Camera *cam);
 };

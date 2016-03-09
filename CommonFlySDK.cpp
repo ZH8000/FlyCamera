@@ -101,15 +101,16 @@ int CommonFlySDK::initCamera( Camera *cam) {
     }
 }
 
-CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) {
+void CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber, CameraProp* prop) {
     const unsigned int sk_numProps = 18;
     
-    CameraProp prop;
+//    CameraProp prop;
 
     Property camProp;
     PropertyInfo camPropInfo;
     
-    prop.camId = serialNumber;
+    prop->camId = serialNumber;
+    
     for (unsigned int x = 0; x < sk_numProps; x++) {
         const PropertyType k_currPropType = (PropertyType)x;
         camProp.type = k_currPropType;
@@ -121,39 +122,39 @@ CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) 
             continue;
         }
         if (camPropInfo.type == BRIGHTNESS) {
-            prop.brightnessOnOff = camProp.autoManualMode;
-            prop.brightnessValue = camProp.valueA;
+            prop->brightnessOnOff = camProp.autoManualMode;
+            prop->brightnessValue = camProp.valueA;
 //            cout << serialNumber << " BRIGHTNESS " << camProp.valueA << endl;
             
         } else
         if (camPropInfo.type == AUTO_EXPOSURE) {
-            prop.exposureOnOff = camProp.autoManualMode;
-            prop.exposureValue = camProp.valueA;
+            prop->exposureOnOff = camProp.autoManualMode;
+            prop->exposureValue = camProp.valueA;
 //            cout << serialNumber << " AUTO_EXPOSURE " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == SHARPNESS) {
-            prop.sharpnessOnOff = camProp.autoManualMode;
-            prop.sharpnessValue = camProp.valueA;
+            prop->sharpnessOnOff = camProp.autoManualMode;
+            prop->sharpnessValue = camProp.valueA;
 //            cout << serialNumber << " SHARPNESS " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == GAMMA) {
-            prop.gammaOnOff = camProp.autoManualMode;
-            prop.gammaValue = camProp.valueA;
+            prop->gammaOnOff = camProp.autoManualMode;
+            prop->gammaValue = camProp.valueA;
 //            cout << serialNumber << " GAMMA " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == SHUTTER) {
-            prop.shutterOnOff = camProp.autoManualMode;
-            prop.shutterValue = camProp.valueA;
+            prop->shutterOnOff = camProp.autoManualMode;
+            prop->shutterValue = camProp.valueA;
 //            cout << serialNumber << " SHUTTER " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == GAIN) {
-            prop.gainOnOff = camProp.autoManualMode;
-            prop.gainValue = camProp.valueA;
+            prop->gainOnOff = camProp.autoManualMode;
+            prop->gainValue = camProp.valueA;
 //            cout << serialNumber << " GAIN " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == FRAME_RATE) {
-            prop.frameOnOff = camProp.autoManualMode;
-            prop.frameValue = camProp.valueA;
+            prop->frameOnOff = camProp.autoManualMode;
+            prop->frameValue = camProp.valueA;
 //            cout << serialNumber << " FRAME_RATE " << camProp.valueA << endl;
         } else 
         if (camPropInfo.type == TEMPERATURE) {
@@ -161,7 +162,16 @@ CameraProp CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber) 
         }
     }
     
-    return prop;
+    
+    prop->binaryOnOff = 0;       // binarization
+    prop->binaryInvOnOff = 0;    // binarization inverse
+    prop->binaryMax = 100;       // binarization max value will between 0(+150) ~ 150(+150), p.s. actually value should plus 150, so 150~300
+    prop->oldBinaryMax = 100;
+    prop->binaryThresh = 30;
+    prop->oldBinaryThresh = 30;
+    
+    
+//    return prop;
 }
 
 void CommonFlySDK::setParamAutoOnOff(FlyCapture2::PropertyType type, int onOff, FlyCapture2::Camera *cam) {

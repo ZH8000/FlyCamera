@@ -5,11 +5,9 @@ using namespace cv;
 using namespace FlyCapture2;
 
 
-Camera cam;
 map<unsigned int, CameraProp> propMap;
 Mat sampleImage;
 list<Mat> sampleImages;
-const int sampleImagesSize = 10;
 int sampleImagesFlag = 0;
 Mat targetImage;
 static const unsigned int sk_numProps = 18;
@@ -85,6 +83,9 @@ int main(int argc, char** argv) {
 
         // 4. show window(s)
         createTrackbars(camInfo.serialNumber, &propMap[camInfo.serialNumber]);
+        
+        sdk.getCameraProp(ppCameras[i], camInfo.serialNumber, &propMap[camInfo.serialNumber]);
+//        initParams(ppCameras[x], &propMap[camInfo.serialNumber]);
 
         // 5. Start capturing images
         error = ppCameras[i]->StartCapture();
@@ -110,13 +111,24 @@ int main(int argc, char** argv) {
             return 0;
         }
         
+        if ( c == 'r') {
+            // TODO clear sampled images list
+            cout << "-------Reset Sampling-------" << endl;
+            for (int x = 0; x < sampleImagesSize; x++) {
+                stringstream ss;
+                ss << sampled_title << x;
+                destroyWindow(ss.str());
+             }
+        }
+        
         for ( unsigned int x = 0; x < numCameras; x++) {
         
             // 1. get camera's prop and update
             CameraInfo camInfo;
             ppCameras[x]->GetCameraInfo( &camInfo );
-            propMap[camInfo.serialNumber] = sdk.getCameraProp(ppCameras[x], camInfo.serialNumber);
-            updateTrackbars(ppCameras[x], &propMap[camInfo.serialNumber]);
+            //propMap[camInfo.serialNumber] = sdk.getCameraProp(ppCameras[x], camInfo.serialNumber, propMap[camInfo.serialNumber]);
+            //sdk.getCameraProp(ppCameras[x], camInfo.serialNumber, &propMap[camInfo.serialNumber]);
+            initParams(ppCameras[x], &propMap[camInfo.serialNumber]);
 
             // 2. show image
             Image rawImage;
@@ -131,6 +143,26 @@ int main(int argc, char** argv) {
             // convert to OpenCV Mat
             unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
             Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
+            
+            // resize to smaller size
+            Size size = Size(320, 240);
+            resize(image, image, size);
+            
+            /*
+            if (propMap[camInfo.serialNumber].binaryOnOff == 1) {
+                cout << camInfo.serialNumber << " binaryOnOff = 1" << endl;
+                
+                cout << propMap[camInfo.serialNumber].exposureValue << endl;
+                if (propMap[camInfo.serialNumber].binaryInvOnOff == 1) {
+                    threshold(image, image, propMap[camInfo.serialNumber].binaryThresh, (propMap[camInfo.serialNumber].binaryMax+150), CV_THRESH_BINARY_INV);
+                } else {
+                    threshold(image, image, propMap[camInfo.serialNumber].binaryThresh, (propMap[camInfo.serialNumber].binaryMax+150), CV_THRESH_BINARY);
+                }
+            } else {
+                cout << camInfo.serialNumber << " binaryOnOff = 0" << endl;
+                cout << camInfo.serialNumber << " " << propMap[camInfo.serialNumber].exposureValue << endl;
+            }
+            */
 
             stringstream ss;
             ss << win_title << camInfo.serialNumber;
@@ -251,17 +283,17 @@ void createTrackbars(unsigned int id, CameraProp *prop) {
     ss.str(std::string());
     ss << win_opencv << id;
     namedWindow(ss.str(), WINDOW_NORMAL);
-    createTrackbar(bina_title,  ss.str(), &(prop->binaryOnOff), 1);
+    createTrackbar(bina_title,  ss.str(), &(prop->binaryOnOff), 1, on_slider_binaryOnOff, prop);
     createTrackbar(binv_title,  ss.str(), &(prop->binaryInvOnOff), 1);
-    createTrackbar(bina_max,    ss.str(), &(prop->binaryMax), 150, on_slider_binaryMax);
-    createTrackbar(bina_thresh, ss.str(), &(prop->binaryThresh), 150, on_slider_binaryThresh);
+    createTrackbar(bina_max,    ss.str(), &(prop->binaryMax), 150, on_slider_binaryMax, prop);
+    createTrackbar(bina_thresh, ss.str(), &(prop->binaryThresh), 150, on_slider_binaryThresh, prop);
     createTrackbar(succ_matches, win_opencv, &successMatches, 4000);
     // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
 }
 
-void updateTrackbars(Camera* camera, CameraProp* prop) {
+void initParams(Camera* camera, CameraProp* prop) {
     const unsigned int sk_numProps = 18;
-    
+
     // for Camera settings
     stringstream ss;
     ss.str(std::string());
@@ -271,7 +303,7 @@ void updateTrackbars(Camera* camera, CameraProp* prop) {
     PropertyInfo camPropInfo;
     for (unsigned int x = 0; x < sk_numProps; x++) {
         const PropertyType k_currPropType = (PropertyType)x;
-        camProp.type = k_currPropType;
+//        camProp.type = k_currPropType;
         camPropInfo.type = k_currPropType;
 
         FlyCapture2::Error getPropErr = camera->GetProperty( &camProp );
@@ -280,50 +312,64 @@ void updateTrackbars(Camera* camera, CameraProp* prop) {
             continue;
         }
         if (camPropInfo.type == BRIGHTNESS) {
-            prop->brightnessOnOff = camProp.autoManualMode;
-            prop->brightnessValue = camProp.valueA;
+//            prop->brightnessOnOff = camProp.autoManualMode;
+//            prop->brightnessValue = camProp.valueA;
 //            cout << prop->camId << " BRIGHTNESS " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == AUTO_EXPOSURE) {
-            prop->exposureOnOff = camProp.autoManualMode;
-            prop->exposureValue = camProp.valueA;
+//            prop->exposureOnOff = camProp.autoManualMode;
+//            prop->exposureValue = camProp.valueA;
 //            cout << prop->camId << " AUTO_EXPOSURE " << prop->exposureOnOff << " " << prop->exposureValue << endl;
             setTrackbarPos(expo_title, ss.str(), prop->exposureOnOff);
             setTrackbarPos(expo_value, ss.str(), prop->exposureValue);
         } else
         if (camPropInfo.type == SHARPNESS) {
-            prop->sharpnessOnOff = camProp.autoManualMode;
-            prop->sharpnessValue = camProp.valueA;
+//            prop->sharpnessOnOff = camProp.autoManualMode;
+//            prop->sharpnessValue = camProp.valueA;
 //            cout << prop->camId << " SHARPNESS " << camProp.valueA << endl;
             setTrackbarPos(shar_title, ss.str(), prop->sharpnessOnOff);
             setTrackbarPos(shar_value, ss.str(), prop->sharpnessValue);
         } else
         if (camPropInfo.type == GAMMA) {
-            prop->gammaOnOff = camProp.autoManualMode;
-            prop->gammaValue = camProp.valueA;
+//            prop->gammaOnOff = camProp.autoManualMode;
+//            prop->gammaValue = camProp.valueA;
 //            cout << prop->camId << " GAMMA " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == SHUTTER) {
-            prop->shutterOnOff = camProp.autoManualMode;
-            prop->shutterValue = camProp.valueA;
+//            prop->shutterOnOff = camProp.autoManualMode;
+//            prop->shutterValue = camProp.valueA;
 //            cout << prop->camId << " SHUTTER " << camProp.valueA << endl;
             setTrackbarPos(shut_title, ss.str(), prop->shutterOnOff);
             setTrackbarPos(shut_value, ss.str(), prop->shutterValue);
         } else
         if (camPropInfo.type == GAIN) {
-            prop->gainOnOff = camProp.autoManualMode;
-            prop->gainValue = camProp.valueA;
+//            prop->gainOnOff = camProp.autoManualMode;
+//            prop->gainValue = camProp.valueA;
 //            cout << prop->camId << " GAIN " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == FRAME_RATE) {
-            prop->frameOnOff = camProp.autoManualMode;
-            prop->frameValue = camProp.valueA;
+//            prop->frameOnOff = camProp.autoManualMode;
+//            prop->frameValue = camProp.valueA;
 //            cout << prop->camId << " FRAME_RATE " << camProp.valueA << endl;
         } else 
         if (camPropInfo.type == TEMPERATURE) {
 //            cout << prop->camId << " TEMPERATURE " << camProp.valueA << " K" << endl;
         }
     }
+    
+    // for OpenCV settings
+    stringstream ss_cv;
+    ss_cv.str(std::string());
+    ss_cv << win_opencv << prop->camId;
+
+    cout << "updating...binaryOnOff" << prop->binaryOnOff << endl;
+    //prop->binaryOnOff = 0;       // binarization
+    //prop->binaryInvOnOff = 0;    // binarization inverse
+    //prop->binaryMax = 100;       // binarization max value will between 0(+150) ~ 150(+150), p.s. actually value should plus 150, so 150~300
+    //prop->oldBinaryMax = 100;
+    //prop->binaryThresh = 30;
+    //prop->oldBinaryThresh = 30;
+    //setTrackbarPos(bina_title, ss_cv.str(), prop->binaryOnOff);
 }
 
 /*
@@ -562,79 +608,33 @@ void on_slider_shutterValue(int, void* userdata) {
 // SHUTTER -end-------------------------------
 
 // BINARIZATION -start------------------------
+void on_slider_binaryOnOff(int, void* userdata) {
+    cout << "on_slider_binaryOnOff " << ((CameraProp*)userdata)->binaryOnOff << endl;
+}
+
 void on_slider_binaryMax(int, void* userdata) {
-    if (binaryOnOff == 0) {
-        setTrackbarPos(bina_max, win_opencv, oldBinaryMax);
+/*
+    stringstream ss;
+    ss.str(std::string());
+    ss << win_opencv << ((CameraProp*)userdata)->camId;
+
+    if ( ((CameraProp*)userdata)->binaryOnOff == 0 ) {
+        setTrackbarPos(bina_max, ss.str(), ((CameraProp*)userdata)->oldBinaryMax);
+        cout << "binaryMax off: " << ((CameraProp*)userdata)->oldBinaryMax << endl;
     } else {
-        oldBinaryMax = binaryMax;
+        ((CameraProp*)userdata)->oldBinaryMax = ((CameraProp*)userdata)->binaryMax;
+        cout << "binaryMax  on: " << ((CameraProp*)userdata)->oldBinaryMax << endl;
     }
+    */
 }
 
 void on_slider_binaryThresh(int, void* userdata) {
-    if (binaryOnOff == 0) {
-        setTrackbarPos(bina_thresh, win_opencv, oldBinaryThresh);
+/*
+    if (((CameraProp*)userdata)->binaryOnOff == 0) {
+        setTrackbarPos(bina_thresh, win_opencv, ((CameraProp*)userdata)->oldBinaryThresh);
     } else {
-        oldBinaryThresh = binaryThresh;
+        ((CameraProp*)userdata)->oldBinaryThresh = ((CameraProp*)userdata)->binaryThresh;
     }
+    */
 }
 // BINARIZATION -end--------------------------
-// OCR -start---------------------------------
-/*
-void OCR(Mat *image) {
-    Mat newImage;
-    RNG rng(12345);
-    //Mat tmp = imread("../Lenna.png");;
-    Mat tmp;
-    image->copyTo(tmp);   
-    cvtColor(tmp, tmp, CV_BGR2GRAY);
-    tmp.convertTo(tmp, CV_8UC1);
-
-    vector< vector<Point> > contours;
-    vector< vector<Point> > contoursLow;
-    vector<Vec4i> hierarchy;
-    findContours(tmp, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-    // findContours(tmp, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-    // approxPolyDP(contours, contoursLow, 1, true);
-    for(int x = 0; x < contours.size(); x++) {
-        approxPolyDP(contours[x], contours[x], 1, true);
-    }
-   
-    Moments moments;
-    double humoments[7];
-
-    Mat drawing = Mat::zeros(image->size(), CV_8UC3);
-    for (int x = 0; x < contours.size(); x++) {
-        Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-        drawContours( drawing, contours, x, color, 2, 8, hierarchy, 0, Point() );
-        Rect rect;
-        Point pt1, pt2;
-
-        rect = boundingRect(contours[x]);
-        pt1.x = rect.x;
-        pt2.x = (rect.x + rect.width);
-        pt1.y = rect.y;
-        pt2.y = (rect.y + rect.height);
-        rectangle(drawing, pt1, pt2, color, 1, 8, 0);
-
-        //moments = moments(contours[x]);
-        //HuMoments(moments, humoments);
-    }
-    namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
-    imshow( "Contours", drawing );
-
-
-    tesseract::TessBaseAPI tess;
-    tess.Init(NULL, "eng", tesseract::OEM_DEFAULT);
-    tess.SetPageSegMode(tesseract::PSM_SINGLE_BLOCK);
-
-    tess.SetImage((uchar*)image->data, image->cols, image->rows, 1, image->cols);
-    char* out = tess.GetUTF8Text();
-
-    ocrOnOff = 0;
-    setTrackbarPos(tess_title, win_opencv, ocrOnOff);
-
-    cout << out << endl;
-    cout << "-----------------------------" << endl;
-}
-*/
-// OCR -end-----------------------------------

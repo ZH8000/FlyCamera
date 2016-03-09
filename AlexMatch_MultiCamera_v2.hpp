@@ -62,9 +62,10 @@ const char* bina_thresh = "影像二元化閥值";            // binarization th
 // const char* blur_value = "高斯模糊 Kernel 大小";
 const char* succ_matches = "辦別成功最低Match值";
 // const char* tess_title = "單張文字辨識 trigger";
+const char* sampled_title = " 樣本 ";
 
 void createTrackbars(unsigned int id, CameraProp* prop);
-void updateTrackbars(FlyCapture2::Camera* camera, CameraProp* prop);
+void initParams(FlyCapture2::Camera* camera, CameraProp* prop);
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);
@@ -72,6 +73,7 @@ void on_slider_sharpnessOnOff(int, void*); // sharpness
 void on_slider_sharpnessValue(int, void*);
 void on_slider_shutterOnOff(int, void*);   // shutter
 void on_slider_shutterValue(int, void*);
+void on_slider_binaryOnOff(int, void*);
 void on_slider_binaryMax(int, void*);      // binarization
 void on_slider_binaryThresh(int, void*);
 void on_slider_ocrOnOff(int, void*);       // OCR
@@ -79,5 +81,7 @@ void on_slider_ocrOnOff(int, void*);       // OCR
 
 // void getCameraProp(Camera*);
 // int RunSingleCamera( PGRGuid guid );
+
+const int sampleImagesSize = 10;
 
 #endif
