@@ -22,6 +22,7 @@
 
 #include "CommonFlySDK.hpp"
 #include "CameraProp.hpp"
+#include "OpenCVProp.hpp"
 
 const float inlier_threshold = 2.5f; 
 const float nn_match_ratio = 0.8f;   
@@ -64,8 +65,9 @@ const char* succ_matches = "辦別成功最低Match值";
 // const char* tess_title = "單張文字辨識 trigger";
 const char* sampled_title = " 樣本 ";
 
-void createTrackbars(unsigned int id, CameraProp* prop);
-void initParams(FlyCapture2::Camera* camera, CameraProp* prop);
+void createTrackbars(unsigned int id, CameraProp* prop, OpenCVProp* propCV);
+void updateTrackbars(FlyCapture2::Camera* camera, CameraProp* prop);
+void initOpenCVProp(unsigned int camId, OpenCVProp* propCV);
 
 void on_slider_exposureOnOff(int, void*);  // exposure
 void on_slider_exposureValue(int, void*);

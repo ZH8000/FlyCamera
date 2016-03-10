@@ -105,7 +105,6 @@ void CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber, Camera
     const unsigned int sk_numProps = 18;
     
 //    CameraProp prop;
-
     Property camProp;
     PropertyInfo camPropInfo;
     
@@ -155,21 +154,21 @@ void CommonFlySDK::getCameraProp( Camera *cam, unsigned int serialNumber, Camera
         if (camPropInfo.type == FRAME_RATE) {
             prop->frameOnOff = camProp.autoManualMode;
             prop->frameValue = camProp.valueA;
-//            cout << serialNumber << " FRAME_RATE " << camProp.valueA << endl;
+///            cout << serialNumber << " FRAME_RATE " << camProp.valueA << endl;
         } else 
         if (camPropInfo.type == TEMPERATURE) {
 //            cout << serialNumber << " TEMPERATURE " << camProp.valueA << " K" << endl;
         }
     }
     
-    
+    /*
     prop->binaryOnOff = 0;       // binarization
     prop->binaryInvOnOff = 0;    // binarization inverse
     prop->binaryMax = 100;       // binarization max value will between 0(+150) ~ 150(+150), p.s. actually value should plus 150, so 150~300
     prop->oldBinaryMax = 100;
     prop->binaryThresh = 30;
     prop->oldBinaryThresh = 30;
-    
+    */
     
 //    return prop;
 }

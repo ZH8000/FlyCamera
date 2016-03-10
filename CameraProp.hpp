@@ -33,6 +33,7 @@ struct CameraProp {
     int frameOnOff;
     int frameValue;
     
+    /*
     // BINARY(INV) - OpenCV
     int binaryOnOff;
     int binaryInvOnOff;
@@ -40,6 +41,7 @@ struct CameraProp {
     int oldBinaryMax;
     int binaryThresh;
     int oldBinaryThresh;
+    */
 };
 
 #endif
