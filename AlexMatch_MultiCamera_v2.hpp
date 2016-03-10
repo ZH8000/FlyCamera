@@ -84,6 +84,4 @@ void on_slider_ocrOnOff(int, void*);       // OCR
 // void getCameraProp(Camera*);
 // int RunSingleCamera( PGRGuid guid );
 
-const int sampleImagesSize = 10;
-
 #endif

@@ -4,14 +4,13 @@ using namespace std;
 using namespace cv;
 using namespace FlyCapture2;
 
-
+int sampleImagesFlag = 0;
+const int sampleImagesSize = 10;
 map<unsigned int, CameraProp> propMap;
 map<unsigned int, OpenCVProp> propCVMap;
-Mat sampleImage;
-list<Mat> sampleImages;
-int sampleImagesFlag = 0;
-Mat targetImage;
-static const unsigned int sk_numProps = 18;
+map<unsigned int, list<Mat> > sampledImagesMap;
+map<unsigned int, Mat> targetImagesMap;
+list<unsigned int> cameraList;
 
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
@@ -66,6 +65,7 @@ int main(int argc, char** argv) {
             return -1;
         }
         sdk.PrintCameraInfo( &camInfo );
+        cameraList.push_back(camInfo.serialNumber);
 
         // 3. Set all cameras to a specific mode and frame rate so they can be synchronized
         error = ppCameras[i]->SetVideoModeAndFrameRate( 
@@ -111,9 +111,15 @@ int main(int argc, char** argv) {
         }
         
         if ( c == 'r') {
-            // TODO clear sampled images list
+            for(unsigned int x = 0; x < numCameras; x++) {
+                CameraInfo camInfo;
+                ppCameras[x]->GetCameraInfo( &camInfo );
+                sampledImagesMap[camInfo.serialNumber].clear();
+            }
+            sampleImagesFlag = 0;
             cout << "-------Reset Sampling-------" << endl;
             for (int x = 0; x < sampleImagesSize; x++) {
+                
                 stringstream ss;
                 ss << sampled_title << x;
                 destroyWindow(ss.str());
@@ -146,14 +152,45 @@ int main(int argc, char** argv) {
             // Size size = Size(320, 240);
             // resize(image, image, size);
             
-
+            // (INVERSE) BINARY ON/OFF
             if (propCVMap[camInfo.serialNumber].binaryOnOff == 1) {
                 if (propCVMap[camInfo.serialNumber].binaryInvOnOff == 1) {
                     threshold(image, image, propCVMap[camInfo.serialNumber].binaryThresh, (propCVMap[camInfo.serialNumber].binaryMax+150), CV_THRESH_BINARY_INV);
                 } else {
                     threshold(image, image, propCVMap[camInfo.serialNumber].binaryThresh, (propCVMap[camInfo.serialNumber].binaryMax+150), CV_THRESH_BINARY);
                 }
-            } else {
+            }
+            
+            if( c == 's') {
+                if(sampledImagesMap[camInfo.serialNumber].size() < sampleImagesSize) { // NOT compare
+                    sampledImagesMap[camInfo.serialNumber].push_back(image);
+                    cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
+                } else { // START compare!
+                    image.copyTo(targetImagesMap[camInfo.serialNumber]);
+                    // print start time
+                    time_t t_s = time(0);
+                    struct tm * now = localtime( &t_s );
+                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
+                
+                    clock_t start, end;
+                    double duration;
+                    start = clock();
+                
+                    list<Mat>::iterator i;
+                    for(i = sampledImagesMap[camInfo.serialNumber].begin(); i != sampledImagesMap[camInfo.serialNumber].end(); ++i) {
+                        int idx =  distance(sampledImagesMap[camInfo.serialNumber].begin(), i);
+                        cout << idx << endl;
+                    }
+                    
+                    end = clock();
+                    duration = (double)(end - start) / CLOCKS_PER_SEC;
+                    cout << "Duration: "  << duration << endl;
+                    
+                    // print end time
+                    time_t t_e = time(0);
+                    struct tm * now_e = localtime( &t_e );
+                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
+                }
             }
 
             stringstream ss;
@@ -166,6 +203,7 @@ int main(int argc, char** argv) {
 }
 
 void Match(Mat& sample, int idx) {
+/*
 #if 0
  int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
     GaussianBlur(imag1, img1, Size(3, 3), sigma);
@@ -247,6 +285,7 @@ void Match(Mat& sample, int idx) {
     cout << "# Inliers:        \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:  \t" << inlier_ratio << endl;
     cout << endl;
+*/
 }
 
 void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
@@ -467,7 +506,7 @@ int RunSingleCamera( PGRGuid guid ) {
 
         imshow(win_title, image);
     }
-
+PrintError
     // Stop capturing images
     error = cam.StopCapture();
     if (error != PGRERROR_OK) {

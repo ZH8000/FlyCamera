@@ -3,6 +3,7 @@ project( app )
 
 find_package( OpenCV REQUIRED )
 #find_package( GTK2 REQUIRED gtk )
+find_package( PythonLibs REQUIRED )
 
 #find_package(PkgConfig REQUIRED)
 #pkg_check_modules(GTK2 REQUIRED gtk+-2.0)
@@ -12,6 +13,7 @@ find_package( OpenCV REQUIRED )
 
 set( FLYCAP_INCLUDE "/usr/include/flycapture" )
 include_directories( ${FLYCAP_INCLUDE} )
+include_directories(${PYTHON_INCLUDE_DIRS})
 
 #add_executable( app FlyCamera.cpp )
 #add_executable( app AlexMatch.cpp )
@@ -41,5 +43,5 @@ add_executable( app AlexMatch_MultiCamera_v2.cpp CommonFlySDK.cpp )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 #SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
 
-target_link_libraries( app ${OpenCV_LIBS} -lflycapture tesseract )
+target_link_libraries( app ${OpenCV_LIBS} ${PYTHON_LIBRARIES} -lflycapture tesseract )
 #target_link_libraries( app ${OpenCV_LIBS} -lflycapture tesseract ${GTK2_LIBRARIES} )
