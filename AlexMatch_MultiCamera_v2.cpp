@@ -19,6 +19,8 @@ void PrintError( FlyCapture2::Error error ) {
 Camera** ppCameras;
 unsigned int numCameras;
 
+Mat homography;
+
 int main(int argc, char** argv) {
     cout << "Press 'q' to quit" << endl;
     cout << "Press 's' to start sampling" << endl;
@@ -37,6 +39,10 @@ int main(int argc, char** argv) {
     }
 
     ppCameras = new Camera*[numCameras];
+    
+    // for AKAXE matching
+    FileStorage fs("../H1to3p.xml", FileStorage::READ);
+    fs.getFirstTopLevelNode() >> homography;
 
     // Connect to all detected cameras and attempt to set them to
     // a common video mode and frame rate
@@ -111,20 +117,34 @@ int main(int argc, char** argv) {
         }
         
         if ( c == 'r') {
+            /*
             for(unsigned int x = 0; x < numCameras; x++) {
                 CameraInfo camInfo;
                 ppCameras[x]->GetCameraInfo( &camInfo );
                 sampledImagesMap[camInfo.serialNumber].clear();
             }
+            */
+            list<unsigned int>::iterator ii;
+            for(ii = cameraList.begin(); ii != cameraList.end(); ++ii) {
+                //cout << distance(cameraList.begin(), ii) << " "<< *ii<< endl;
+                sampledImagesMap[*ii].clear();
+                for (int x = 0; x < sampleImagesSize; x++) {
+                    stringstream ss;
+                    ss << *ii << sampled_title << x;
+                    destroyWindow(ss.str());
+                }
+            }
+            
             sampleImagesFlag = 0;
-            cout << "-------Reset Sampling-------" << endl;
-            for (int x = 0; x < sampleImagesSize; x++) {
-                
-                stringstream ss;
-                ss << sampled_title << x;
-                destroyWindow(ss.str());
-             }
+            cout << "-------Reset Sampled Images-------" << endl;
+            
         }
+        /* for loop to get camera id.
+        list<unsigned int>::iterator ii;
+        for(ii = cameraList.begin(); ii != cameraList.end(); ++ii) {
+            cout << distance(cameraList.begin(), ii) << " "<< *ii<< endl;
+        }
+        */
         
         for ( unsigned int x = 0; x < numCameras; x++) {
         
@@ -149,8 +169,8 @@ int main(int argc, char** argv) {
             Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
             
             // resize to smaller size
-            // Size size = Size(320, 240);
-            // resize(image, image, size);
+            Size size = Size(640, 480);
+            resize(image, image, size);
             
             // (INVERSE) BINARY ON/OFF
             if (propCVMap[camInfo.serialNumber].binaryOnOff == 1) {
@@ -164,13 +184,14 @@ int main(int argc, char** argv) {
             if( c == 's') {
                 if(sampledImagesMap[camInfo.serialNumber].size() < sampleImagesSize) { // NOT compare
                     sampledImagesMap[camInfo.serialNumber].push_back(image);
-                    cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
+                    //cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
+                    cout << "-----" << camInfo.serialNumber << " Get Sampled Image #" << sampledImagesMap[camInfo.serialNumber].size() << "-----" << endl;
                 } else { // START compare!
                     image.copyTo(targetImagesMap[camInfo.serialNumber]);
                     // print start time
                     time_t t_s = time(0);
                     struct tm * now = localtime( &t_s );
-                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
+                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << camInfo.serialNumber << " START" << "****************" << endl;
                 
                     clock_t start, end;
                     double duration;
@@ -179,7 +200,8 @@ int main(int argc, char** argv) {
                     list<Mat>::iterator i;
                     for(i = sampledImagesMap[camInfo.serialNumber].begin(); i != sampledImagesMap[camInfo.serialNumber].end(); ++i) {
                         int idx =  distance(sampledImagesMap[camInfo.serialNumber].begin(), i);
-                        cout << idx << endl;
+                        //cout << idx << endl;
+                        Match(*i, idx, camInfo.serialNumber);
                     }
                     
                     end = clock();
@@ -189,7 +211,7 @@ int main(int argc, char** argv) {
                     // print end time
                     time_t t_e = time(0);
                     struct tm * now_e = localtime( &t_e );
-                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
+                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << camInfo.serialNumber << " END " << "****************" << endl;
                 }
             }
 
@@ -201,9 +223,10 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+    
+void Match(Mat& sampledImage, int idx, unsigned int camId) {
+//    cout << "camId: " << camId << " " << idx << endl;
 
-void Match(Mat& sample, int idx) {
-/*
 #if 0
  int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
     GaussianBlur(imag1, img1, Size(3, 3), sigma);
@@ -212,17 +235,14 @@ void Match(Mat& sample, int idx) {
     Canny(img1, img1, 10, 50, 3);
     Canny(img2, img2, 10, 50, 3);
 #endif    
-    Mat homography;
-    FileStorage fs("../H1to3p.xml", FileStorage::READ);
-    fs.getFirstTopLevelNode() >> homography;
 
     vector<KeyPoint> kpts1, kpts2;
     Mat desc1, desc2;
 
     Ptr<AKAZE> akaze = AKAZE::create();
     //akaze->detectAndCompute(sampleImage, noArray(), kpts1, desc1);
-    akaze->detectAndCompute(sample, noArray(), kpts1, desc1);
-    akaze->detectAndCompute(targetImage, noArray(), kpts2, desc2);
+    akaze->detectAndCompute(sampledImage, noArray(), kpts1, desc1);
+    akaze->detectAndCompute(targetImagesMap[camId], noArray(), kpts2, desc2);
 
     BFMatcher matcher(NORM_HAMMING);
     vector< vector<DMatch> > nn_matches;
@@ -261,7 +281,7 @@ void Match(Mat& sample, int idx) {
 
     Mat res;
     //drawMatches(sampleImage, inliers1, targetImage, inliers2, good_matches, res);
-    drawMatches(sample, inliers1, targetImage, inliers2, good_matches, res);
+    drawMatches(sampledImage, inliers1, targetImagesMap[camId], inliers2, good_matches, res);
     Point pt = Point(100, 100);
     if (matched1.size() >= successMatches) {
         putText(res, "Succeed!", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
@@ -272,12 +292,12 @@ void Match(Mat& sample, int idx) {
     //namedWindow(win_akaze, WINDOW_NORMAL);
     //imshow(win_akaze, res);
     stringstream ss;
-    ss << idx;
+    ss << camId << sampled_title << idx;
     namedWindow(ss.str(), WINDOW_NORMAL);
     imshow(ss.str(), res);
 
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
-    cout << "Alex Matching Results" << endl;
+    cout << camId << " Alex Matching Results #" << idx << endl;
     cout << "*******************************" << endl;
     cout << "# Keypoints 1:    \t" << kpts1.size() << endl;
     cout << "# Keypoints 2:    \t" << kpts2.size() << endl;
@@ -285,7 +305,6 @@ void Match(Mat& sample, int idx) {
     cout << "# Inliers:        \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:  \t" << inlier_ratio << endl;
     cout << endl;
-*/
 }
 
 void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
@@ -563,6 +582,7 @@ void setParamValue(PropertyType type, int value, unsigned int camId) {
 
     unsigned int cam = 0;
 
+    /*
     for (int x = 0; x < numCameras; x++) {
         CameraInfo camInfo;
         error = ppCameras[x]->GetCameraInfo( &camInfo );
@@ -571,6 +591,13 @@ void setParamValue(PropertyType type, int value, unsigned int camId) {
         }
         if (camInfo.serialNumber == camId) {
             cam = x;
+            break;
+        }
+    }*/
+    list<unsigned int>::iterator ii;
+    for(ii = cameraList.begin(); ii != cameraList.end(); ++ii) {
+        if (*ii == camId) {
+            cam = distance(cameraList.begin(), ii);
             break;
         }
     }

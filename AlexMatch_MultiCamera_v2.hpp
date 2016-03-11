@@ -81,6 +81,7 @@ void on_slider_binaryThresh(int, void*);
 void on_slider_ocrOnOff(int, void*);       // OCR
 // void OCR(Mat*);
 
+void Match(cv::Mat& sampledImage, int idx, unsigned int camId);
 // void getCameraProp(Camera*);
 // int RunSingleCamera( PGRGuid guid );
 
