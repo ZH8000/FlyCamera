@@ -6,6 +6,7 @@ using namespace FlyCapture2;
 
 int sampleImagesFlag = 0;
 const int sampleImagesSize = 10;
+map<unsigned int, Camera*> cameraMap;
 map<unsigned int, CameraProp> propMap;
 map<unsigned int, OpenCVProp> propCVMap;
 map<unsigned int, list<Mat> > sampledImagesMap;
@@ -18,8 +19,6 @@ void PrintError( FlyCapture2::Error error ) {
 
 Camera** ppCameras;
 unsigned int numCameras;
-
-Mat homography;
 
 int main(int argc, char** argv) {
     cout << "Press 'q' to quit" << endl;
@@ -41,8 +40,8 @@ int main(int argc, char** argv) {
     ppCameras = new Camera*[numCameras];
     
     // for AKAXE matching
-    FileStorage fs("../H1to3p.xml", FileStorage::READ);
-    fs.getFirstTopLevelNode() >> homography;
+    //FileStorage fs("../H1to3p.xml", FileStorage::READ);
+    //fs.getFirstTopLevelNode() >> homography;
 
     // Connect to all detected cameras and attempt to set them to
     // a common video mode and frame rate
@@ -53,7 +52,7 @@ int main(int argc, char** argv) {
         error = busMgr.GetCameraFromIndex(i, &guid);
         if (error != PGRERROR_OK) {
             PrintError( error );
-            return -1; 
+            return -1;
         }
         //RunSingleCamera( guid );
         // 1. Connect to a camera
@@ -72,6 +71,8 @@ int main(int argc, char** argv) {
         }
         sdk.PrintCameraInfo( &camInfo );
         cameraList.push_back(camInfo.serialNumber);
+        cameraMap[camInfo.serialNumber] = ppCameras[i];
+        
 
         // 3. Set all cameras to a specific mode and frame rate so they can be synchronized
         error = ppCameras[i]->SetVideoModeAndFrameRate( 
@@ -139,24 +140,16 @@ int main(int argc, char** argv) {
             cout << "-------Reset Sampled Images-------" << endl;
             
         }
-        /* for loop to get camera id.
-        list<unsigned int>::iterator ii;
-        for(ii = cameraList.begin(); ii != cameraList.end(); ++ii) {
-            cout << distance(cameraList.begin(), ii) << " "<< *ii<< endl;
-        }
-        */
         
-        for ( unsigned int x = 0; x < numCameras; x++) {
+        for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
         
             // 1. get camera's prop and update
-            CameraInfo camInfo;
-            ppCameras[x]->GetCameraInfo( &camInfo );
-            sdk.getCameraProp(ppCameras[x], camInfo.serialNumber, &propMap[camInfo.serialNumber]);
-            updateTrackbars(ppCameras[x], &propMap[camInfo.serialNumber]);
+            sdk.getCameraProp(cameraMap[*camIdIt], *camIdIt, &propMap[*camIdIt]);
+            updateTrackbars(cameraMap[*camIdIt], &propMap[*camIdIt]);
 
-            // 2. show image
+            // 2. get image
             Image rawImage;
-            error = ppCameras[x]->RetrieveBuffer( &rawImage);
+            error = cameraMap[*camIdIt]->RetrieveBuffer( &rawImage);
             if ( error != PGRERROR_OK ) {
                 PrintError( error );
             }
@@ -173,35 +166,35 @@ int main(int argc, char** argv) {
             resize(image, image, size);
             
             // (INVERSE) BINARY ON/OFF
-            if (propCVMap[camInfo.serialNumber].binaryOnOff == 1) {
-                if (propCVMap[camInfo.serialNumber].binaryInvOnOff == 1) {
-                    threshold(image, image, propCVMap[camInfo.serialNumber].binaryThresh, (propCVMap[camInfo.serialNumber].binaryMax+150), CV_THRESH_BINARY_INV);
+            if (propCVMap[*camIdIt].binaryOnOff == 1) {
+                if (propCVMap[*camIdIt].binaryInvOnOff == 1) {
+                    threshold(image, image, propCVMap[*camIdIt].binaryThresh, (propCVMap[*camIdIt].binaryMax+150), CV_THRESH_BINARY_INV);
                 } else {
-                    threshold(image, image, propCVMap[camInfo.serialNumber].binaryThresh, (propCVMap[camInfo.serialNumber].binaryMax+150), CV_THRESH_BINARY);
+                    threshold(image, image, propCVMap[*camIdIt].binaryThresh, (propCVMap[*camIdIt].binaryMax+150), CV_THRESH_BINARY);
                 }
             }
             
             if( c == 's') {
-                if(sampledImagesMap[camInfo.serialNumber].size() < sampleImagesSize) { // NOT compare
-                    sampledImagesMap[camInfo.serialNumber].push_back(image);
+                if(sampledImagesMap[*camIdIt].size() < sampleImagesSize) { // NOT compare
+                    sampledImagesMap[*camIdIt].push_back(image);
                     //cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
-                    cout << "-----" << camInfo.serialNumber << " Get Sampled Image #" << sampledImagesMap[camInfo.serialNumber].size() << "-----" << endl;
+                    cout << "-----" << *camIdIt << " Get Sampled Image #" << sampledImagesMap[*camIdIt].size() << "-----" << endl;
                 } else { // START compare!
-                    image.copyTo(targetImagesMap[camInfo.serialNumber]);
+                    image.copyTo(targetImagesMap[*camIdIt]);
                     // print start time
                     time_t t_s = time(0);
                     struct tm * now = localtime( &t_s );
-                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << camInfo.serialNumber << " START" << "****************" << endl;
+                    cout << "****************" << *camIdIt << " START " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << endl;
                 
                     clock_t start, end;
                     double duration;
                     start = clock();
                 
                     list<Mat>::iterator i;
-                    for(i = sampledImagesMap[camInfo.serialNumber].begin(); i != sampledImagesMap[camInfo.serialNumber].end(); ++i) {
-                        int idx =  distance(sampledImagesMap[camInfo.serialNumber].begin(), i);
+                    for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
+                        int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
                         //cout << idx << endl;
-                        Match(*i, idx, camInfo.serialNumber);
+                        Match(*i, idx, *camIdIt);
                     }
                     
                     end = clock();
@@ -211,12 +204,12 @@ int main(int argc, char** argv) {
                     // print end time
                     time_t t_e = time(0);
                     struct tm * now_e = localtime( &t_e );
-                    cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << camInfo.serialNumber << " END " << "****************" << endl;
+                    cout << "****************" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << endl;
                 }
             }
 
             stringstream ss;
-            ss << win_title << camInfo.serialNumber;
+            ss << win_title << *camIdIt;
             imshow(ss.str(), image);
         }
     }
@@ -224,7 +217,7 @@ int main(int argc, char** argv) {
     return 0;
 }
     
-void Match(Mat& sampledImage, int idx, unsigned int camId) {
+inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
 //    cout << "camId: " << camId << " " << idx << endl;
 
 #if 0
@@ -236,6 +229,10 @@ void Match(Mat& sampledImage, int idx, unsigned int camId) {
     Canny(img2, img2, 10, 50, 3);
 #endif    
 
+    Mat homography;
+    FileStorage fs("../H1to3p.xml", FileStorage::READ);
+    fs.getFirstTopLevelNode() >> homography;
+    
     vector<KeyPoint> kpts1, kpts2;
     Mat desc1, desc2;
 
@@ -341,7 +338,7 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
     // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
 }
 
-void updateTrackbars(Camera* camera, CameraProp* prop) {
+inline void updateTrackbars(Camera* camera, CameraProp* prop) {
     const unsigned int sk_numProps = 18;
 
     // for Camera settings
@@ -363,44 +360,30 @@ void updateTrackbars(Camera* camera, CameraProp* prop) {
         }
         
         if (camPropInfo.type == BRIGHTNESS) {
-//            prop->brightnessOnOff = camProp.autoManualMode;
-//            prop->brightnessValue = camProp.valueA;
-//            cout << prop->camId << " BRIGHTNESS " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == AUTO_EXPOSURE) {
-//            prop->exposureOnOff = camProp.autoManualMode;
-//            prop->exposureValue = camProp.valueA;
-//            cout << prop->camId << " AUTO_EXPOSURE " << prop->exposureOnOff << " " << prop->exposureValue << endl;
+
+//            cout << prop->camId << " AUTO_EXPOSURE " << camProp.exposureOnOff << " " << camProp.exposureValue << endl;
             setTrackbarPos(expo_title, ss.str(), prop->exposureOnOff);
             setTrackbarPos(expo_value, ss.str(), prop->exposureValue);
         } else
         if (camPropInfo.type == SHARPNESS) {
-//            prop->sharpnessOnOff = camProp.autoManualMode;
-//            prop->sharpnessValue = camProp.valueA;
 //            cout << prop->camId << " SHARPNESS " << camProp.valueA << endl;
             setTrackbarPos(shar_title, ss.str(), prop->sharpnessOnOff);
             setTrackbarPos(shar_value, ss.str(), prop->sharpnessValue);
         } else
         if (camPropInfo.type == GAMMA) {
-//            prop->gammaOnOff = camProp.autoManualMode;
-//            prop->gammaValue = camProp.valueA;
 //            cout << prop->camId << " GAMMA " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == SHUTTER) {
-//            prop->shutterOnOff = camProp.autoManualMode;
-//            prop->shutterValue = camProp.valueA;
 //            cout << prop->camId << " SHUTTER " << camProp.valueA << endl;
             setTrackbarPos(shut_title, ss.str(), prop->shutterOnOff);
             setTrackbarPos(shut_value, ss.str(), prop->shutterValue);
         } else
         if (camPropInfo.type == GAIN) {
-//            prop->gainOnOff = camProp.autoManualMode;
-//            prop->gainValue = camProp.valueA;
 //            cout << prop->camId << " GAIN " << camProp.valueA << endl;
         } else
         if (camPropInfo.type == FRAME_RATE) {
-//            prop->frameOnOff = camProp.autoManualMode;
-//            prop->frameValue = camProp.valueA;
 //            cout << prop->camId << " FRAME_RATE " << camProp.valueA << endl;
         } else 
         if (camPropInfo.type == TEMPERATURE) {
@@ -413,135 +396,6 @@ void updateTrackbars(Camera* camera, CameraProp* prop) {
     ss_cv.str(std::string());
     ss_cv << win_opencv << prop->camId;
 }
-
-/*
-int RunSingleCamera( PGRGuid guid ) {
-    const int k_numImages = 10;
-
-    FlyCapture2::Error error;
-
-    // Connect to a camera
-    error = cam.Connect(&guid);
-    if (error != PGRERROR_OK) {
-        PrintError( error );
-        return -1;
-    }
-
-    // Start capturing images
-    error = cam.StartCapture();
-    if (error != PGRERROR_OK) {
-        PrintError( error );
-        return -1;
-    }
-
-    Image rawImage;
-    Image rgbImage;
-    char c;   
-    while (true) {
-        // Retrieve an image
-        error = cam.RetrieveBuffer( &rawImage );
-        if (error != PGRERROR_OK) {
-            PrintError( error );
-            continue;
-        }
-        getCameraProp(&cam);
-
-        c = waitKey(30);
-        if (c == 27) {
-            cam.StopCapture();
-            cam.Disconnect();
-            delete &cam;
-            destroyAllWindows();
-            return 0;
-        }
-
-        if (c == 'r') {
-             sampleImages.clear();
-             sampleImagesFlag = 0;
-             cout << "-------Reset Sampling-------" << endl;
-             for (int x = 0; x < sampleImagesSize; x++) {
-                stringstream ss;
-                ss << x;
-                destroyWindow(ss.str());
-             }
-         }
-
-        // Convert to RGB
-        rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
-
-        // convert to OpenCV Mat
-        unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
-        Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
-
-        // resize to smaller size
-        Size size = Size(320, 240);
-        resize(image, image, size);
-
-        if (binaryOnOff == 1) {
-            if(binaryInvOnOff == 1) {
-                threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY_INV);
-            } else {
-                threshold(image, image, binaryThresh, (binaryMax+150), CV_THRESH_BINARY);
-            }
-        }
-
-        if (c == 's') {
-            if (sampleImages.size() < sampleImagesSize) {
-                sampleImages.push_back(image);
-                image.copyTo(sampleImage);
-                cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
-            } else {
-                image.copyTo(targetImage);
-
-                // print start time
-                time_t t_s = time(0);
-                struct tm * now = localtime( &t_s );
-                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ START" << endl;
-
-                clock_t start, end;
-                double duration;
-                start = clock();
-
-                list<Mat>::iterator i;
-                for (i = sampleImages.begin(); i != sampleImages.end(); ++i) {
-                    int idx =  distance(sampleImages.begin(), i);
-                    Match(*i, idx);
-                }
-
-                end = clock();
-                duration = (double)(end - start) / CLOCKS_PER_SEC;
-                cout << "Duration: "  << duration << endl;
-
-                // print end time
-                time_t t_e = time(0);
-                struct tm * now_e = localtime( &t_e );
-                cout << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "------------ END" << endl;
-
-                // namedWindow("AKAZE 比對結果", WINDOW_NORMAL);
-                // Mat res = imread("res.png", CV_LOAD_IMAGE_COLOR);
-                // imshow("AKAZE 比對結果", res);
-            }
-        }
-
-        imshow(win_title, image);
-    }
-PrintError
-    // Stop capturing images
-    error = cam.StopCapture();
-    if (error != PGRERROR_OK) {
-        PrintError( error );
-        return -1;
-    }
-
-    // Disconnect the camera
-    error = cam.Disconnect();
-    if (error != PGRERROR_OK) {
-        PrintError( error );
-        return -1;
-    }
-    return 0;
-}
-*/
 
 void setParamAutoOnOff(PropertyType type, int onOff, unsigned int camId) {
     FlyCapture2::Error error;
@@ -582,18 +436,6 @@ void setParamValue(PropertyType type, int value, unsigned int camId) {
 
     unsigned int cam = 0;
 
-    /*
-    for (int x = 0; x < numCameras; x++) {
-        CameraInfo camInfo;
-        error = ppCameras[x]->GetCameraInfo( &camInfo );
-        if (error != PGRERROR_OK) {
-            PrintError( error );
-        }
-        if (camInfo.serialNumber == camId) {
-            cam = x;
-            break;
-        }
-    }*/
     list<unsigned int>::iterator ii;
     for(ii = cameraList.begin(); ii != cameraList.end(); ++ii) {
         if (*ii == camId) {

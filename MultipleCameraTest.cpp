@@ -18,6 +18,29 @@ using namespace FlyCapture2;
 using namespace std;
 using namespace cv;
 
+const char* win_title = "影像";
+const char* win_setting = "攝影機 設定";
+const char* win_opencv = "OpenCV 設定";
+
+const char* expo_title = "自動曝光 Off/On";
+const char* expo_value = "手動曝光值";
+const char* shar_title = "自動影像銳利化 Off/On";
+const char* shar_value = "手動影像銳利化值";
+const char* shut_title = "自動快門 Off/On";
+const char* shut_value = "手動快門值";
+const char* bina_title = "影像二元化 Off/On";
+const char* binv_title = "影像二元化反轉 Off/On";
+const char* bina_max = "影像二元化最大接受閥值(+150)"; // binarization max value will between 0(+150) ~ 150(+150)
+const char* bina_thresh = "影像二元化閥值";            // binarization thresh will between 0 ~ 150
+const char* blur_title = "高斯模糊 Off/On";
+const char* blur_value = "高斯模糊 Kernel 大小";
+const char* succ_matches = "辦別成功最低Match值";
+const char* tess_title = "單張文字辨識 trigger";
+
+stringstream ss_title;
+stringstream ss_setting;
+stringstream ss_opencv;
+
 int RunSingleCamera( PGRGuid guid , unsigned int serialNumber );
 int initCamera( Camera *cam );
 
@@ -121,8 +144,17 @@ int main(int /*argc*/, char** /*argv*/) {
         stringstream ss;
         ss << camInfo.serialNumber;
         namedWindow(ss.str());
-        //char* buttonName = "Bt1";
-        //createButton(buttonName, buttonCallback, NULL, CV_PUSH_BUTTON, 0);
+        
+        ss_title << win_title << camInfo.serialNumber;
+        //ss_setting << win_setting << camInfo.serialNumber;
+        //ss_opencv << win_opencv << camInfo.serialNumber;
+        cout << "ss_title " << ss_title.str() << endl;
+        cout << "ss_setting " << ss_setting.str() << endl;
+        cout << "ss_opencv " << ss_opencv.str() << endl;
+        ss_title.str(std::string());
+        //namedWindow(ss_title.str(), WINDOW_NORMAL);
+        //namedWindow(ss_setting.str(), WINDOW_NORMAL);
+        //namedWindow(ss_opencv.str(), WINDOW_NORMAL);
 
 		initCamera( ppCameras[i] );
 
@@ -155,12 +187,14 @@ int RunSingleCamera( PGRGuid guid, unsigned int serialNumber ) {
     Camera cam;
     FlyCapture2::Error error;
 
+    // Connect to a camera
     error = cam.Connect( &guid );
     if ( error != PGRERROR_OK ) {
         PrintError( error );
         return -1;
     }
 
+    // Start capturing images
     error = cam.StartCapture();
     if ( error != PGRERROR_OK ) {
         PrintError( error );
@@ -168,19 +202,27 @@ int RunSingleCamera( PGRGuid guid, unsigned int serialNumber ) {
     }
 
     Image rawImage;
+    Image rgbImage;
 
     while( true ) {
         error = cam.RetrieveBuffer( &rawImage );
         if ( error != PGRERROR_OK ) {
             PrintError( error );
+            continue;
         }
-    
-        Image rgbImage;
+        // getCameraProp(&cam);
+
         rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
-    
+
         // convert to OpenCV Mat
         unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
         Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
+        
+        // resize to smaller size
+        //Size size = Size(640, 480);
+        //resize(image, image, size);
+        
+        threshold(image, image, 30, (250), CV_THRESH_BINARY);
 
         stringstream ss;
         ss << serialNumber;

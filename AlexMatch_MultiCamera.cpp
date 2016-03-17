@@ -395,7 +395,7 @@ int RunSingleCamera( PGRGuid guid ) {
 
     Image rawImage;
     Image rgbImage;
-    char c;   
+    char c;
     while (true) {
         // Retrieve an image
         error = cam.RetrieveBuffer( &rawImage );

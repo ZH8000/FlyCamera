@@ -151,10 +151,14 @@ int main(int /*argc*/, char** /*argv*/) {
 
             Image rgbImage;
             rawImage.Convert( PIXEL_FORMAT_BGR, &rgbImage );
+            
 
             // convert to OpenCV Mat
             unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
             Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
+            
+            Size size = Size(640, 480);
+            resize(image, image, size);
 
             stringstream ss;
             ss << camInfo.serialNumber;

@@ -25,22 +25,30 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 #add_executable( app FindContours.cpp)
 #add_executable( app pointPolygonTest.cpp )
 #add_executable( app morphology.cpp)
+
 #add_executable( app 2_Circles_v2.cpp)
 #add_executable( app 2_Circles_v3.cpp)
 #add_executable( app 2_Circles_v3_head.cpp)
 #add_executable( app 3_Lines.cpp)
 #add_executable( app calcHist_Demo.cpp )
+
 #add_executable( app hull_demo.cpp )
 #add_executable( app generalContours_demo1.cpp )
 #add_executable( app testGTK.cpp )
+
 #add_executable( app MultipleCameraEx.cpp )
 #add_executable( app MultipleCameraTest.cpp )
 #add_executable( app MultipleCameraTest2.cpp CommonFlySDK.cpp)
 #add_executable( app forDemo.cpp )
+
 #add_executable( app HoughLinesP.cpp )
 #add_executable( app Histogram.cpp )
 #add_executable( app segment_objects.cpp )
-add_executable( app gpio.cpp )
+#add_executable( app AsyncTriggerEx.cpp )
+
+#add_executable( app gpio.cpp )
+#add_executable( app Trigger_hardware.cpp )
+add_executable( app FireTrigger.cpp )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 #SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
 

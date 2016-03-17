@@ -66,7 +66,7 @@ const char* succ_matches = "辦別成功最低Match值";
 const char* sampled_title = " 樣本 ";
 
 void createTrackbars(unsigned int id, CameraProp* prop, OpenCVProp* propCV);
-void updateTrackbars(FlyCapture2::Camera* camera, CameraProp* prop);
+inline void updateTrackbars(FlyCapture2::Camera* camera, CameraProp* prop);
 void initOpenCVProp(unsigned int camId, OpenCVProp* propCV);
 
 void on_slider_exposureOnOff(int, void*);  // exposure
@@ -81,7 +81,7 @@ void on_slider_binaryThresh(int, void*);
 void on_slider_ocrOnOff(int, void*);       // OCR
 // void OCR(Mat*);
 
-void Match(cv::Mat& sampledImage, int idx, unsigned int camId);
+inline void Match(cv::Mat& sampledImage, int idx, unsigned int camId);
 // void getCameraProp(Camera*);
 // int RunSingleCamera( PGRGuid guid );
 
