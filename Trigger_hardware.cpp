@@ -1,8 +1,14 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 #include <flycapture/FlyCapture2.h>
 #include <iostream>
 
 using namespace FlyCapture2;
 using namespace std;
+
+const char* title = "影像";
 
 void PrintError( Error error )
 {
@@ -60,6 +66,7 @@ int main() {
     cout << "Trigger the camera by sending a trigger pulse to GPIO" << triggerMode.source << endl; 
 
     Image image;
+    cv::namedWindow(title, CV_WINDOW_AUTOSIZE);
     for ( int imageCount=0; imageCount < 10; imageCount++ )
     {
         // Grab image        
@@ -71,7 +78,13 @@ int main() {
             PrintError( error );
             break;
         }
-        cout<<"."<<endl; 
+        cout<<"."<<endl;
+
+        // convert to OpenCV Mat
+        unsigned int rowBytes = (double)image.GetReceivedDataSize()/(double)image.GetRows();           
+        cv::Mat img = cv::Mat(image.GetRows(), image.GetCols(), CV_8UC3, image.GetData(),rowBytes);
+
+        cv::imshow(title, img);
     }
 
     // Turn trigger mode off.

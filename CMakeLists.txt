@@ -46,9 +46,9 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 #add_executable( app segment_objects.cpp )
 #add_executable( app AsyncTriggerEx.cpp )
 
-#add_executable( app gpio.cpp )
-#add_executable( app Trigger_hardware.cpp )
-add_executable( app FireTrigger.cpp )
+#add_executable( app gpio_led.cpp )
+add_executable( app Trigger_hardware.cpp )
+#add_executable( app FireTrigger.cpp )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 #SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
 
