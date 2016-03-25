@@ -6,6 +6,8 @@ using namespace FlyCapture2;
 
 int sampleImagesFlag = 0;
 const int sampleImagesSize = 10;
+const Mode k_fmt7Mode = MODE_0;
+const PixelFormat k_fmt7PixFmt = PIXEL_FORMAT_MONO8;
 map<unsigned int, Camera*> cameraMap;
 map<unsigned int, CameraProp> propMap;
 map<unsigned int, OpenCVProp> propCVMap;
@@ -73,10 +75,10 @@ int main(int argc, char** argv) {
         cameraList.push_back(camInfo.serialNumber);
         cameraMap[camInfo.serialNumber] = ppCameras[i];
         
-
+/*
         // 3. Set all cameras to a specific mode and frame rate so they can be synchronized
         error = ppCameras[i]->SetVideoModeAndFrameRate( 
-            VIDEOMODE_1280x960Y8, 
+            VIDEOMODE_1280x960Y8,
             FRAMERATE_60 );
         if ( error != PGRERROR_OK ) {
             PrintError( error );
@@ -86,7 +88,39 @@ int main(int argc, char** argv) {
             cout << "Press Enter to exit. " << endl;
 
             cin.ignore();
+            return -1; 
+        }
+*/
+
+        // 3. Set all cameras by using Format7
+        // 3.1 get and print Format7 info.
+        Format7Info fmt7Info;
+        bool supported;
+        fmt7Info.mode = k_fmt7Mode;
+        error = ppCameras[i] -> GetFormat7Info(&fmt7Info, &supported);
+        if (error != PGRERROR_OK) {
+            PrintError(error);
             return -1;
+        }
+        sdk.PrintFormat7Capabilities(fmt7Info);
+        // 3.2 validate Format7ImageSettings
+        Format7ImageSettings fmt7ImageSettings;
+        fmt7ImageSettings.mode = k_fmt7Mode;
+        fmt7ImageSettings.offsetX = 0;
+        fmt7ImageSettings.offsetY = 0;
+        fmt7ImageSettings.width = fmt7Info.maxWidth;
+        fmt7ImageSettings.height = fmt7Info.maxHeight;
+        fmt7ImageSettings.pixelFormat = k_fmt7PixFmt;
+
+        bool valid;
+        Format7PacketInfo fmt7PacketInfo;
+        error = ppCameras[i] -> ValidateFormat7Settings(&fmt7ImageSettings, &valid, &fmt7PacketInfo);
+        if (error != PGRERROR_OK) {
+            PrintError(error);
+            return -1;
+        }
+        if (!valid) {
+            cout << "Format7 settings are not valid" << endl;
         }
 
         // 4. init OpenCV prop &show window(s)
@@ -100,7 +134,7 @@ int main(int argc, char** argv) {
             return -1;
         }
     }
-    
+
     char c;
     int count = 0;
     while ( true ) {
