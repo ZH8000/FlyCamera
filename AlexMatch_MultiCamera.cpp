@@ -227,6 +227,7 @@ int main(int argc, char** argv)
  */
 
             // 3. setFormat7Configuration
+/*
             //const unsigned int bestPacketSize = 1968;
             const unsigned int bestPacketSize = 984;
             //error = ppCameras[i] -> SetFormat7Configuration(&fmt7ImageSettings, fmt7PacketInfo.recommendedBytesPerPacket);
@@ -235,6 +236,7 @@ int main(int argc, char** argv)
                 PrintError(error);
                 return -1;
             }
+*/
 
             RunSingleCamera( guid );
         } else {
