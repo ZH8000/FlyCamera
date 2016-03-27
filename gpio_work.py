@@ -20,23 +20,19 @@ ft232h.setup(8, GPIO.OUT)  # Make pin C0 a digital output.
 print 'Press Ctrl-C to quit.'
 while True:
 	# Set pin C0 to a high level so the LED turns on.
-	ft232h.output(8, GPIO.HIGH)
+	#ft232h.output(8, GPIO.HIGH)
 	# Sleep for 1 second.
-	time.sleep(1)
-    # Read the input on pin D7 and print out if it's high or low.
-	level = ft232h.input(7)
-	if level == GPIO.LOW:
-		print '#1 Pin D7 is LOW! C0 is HIGH!'
-	else:
-		print '#1 Pin D7 is HIGH! C0 is HIGH!'
+	#time.sleep(1)
 
 	# Set pin C0 to a low level so the LED turns off.
-	ft232h.output(8, GPIO.LOW)
+	#ft232h.output(8, GPIO.LOW)
 	# Sleep for 1 second.
-	time.sleep(1)
+	#time.sleep(1)
 	# Read the input on pin D7 and print out if it's high or low.
 	level = ft232h.input(7)
 	if level == GPIO.LOW:
-		print '#2 Pin D7 is LOW! C0 is LOW!'
+		print '#2 Pin D7 is LOW! Send C0 LOW!'
+		ft232h.output(8, GPIO.HIGH)
 	else:
-		print '#2 Pin D7 is HIGH! C0 is LOW!'
+		print '#2 Pin D7 is HIGH! Send C0 HIGH!'
+		ft232h.output(8, GPIO.LOW)

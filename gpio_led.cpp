@@ -14,6 +14,7 @@ int main(int argc, char* argv[]) {
     PyObject* pTimeString = PyString_FromString((char*)"time");
     PyObject* pTime = PyImport_Import(pTimeString); // import time;
     PyObject* pSleepFunc = PyObject_GetAttrString(pTime, (char*)"sleep"); // time.sleep(...);
+
     PyObject* pSleepFuncArgs = PyTuple_Pack(1, PyInt_FromLong(1)); // (1)
 
     PyObject* pGPIOString = PyString_FromString((char*)"Adafruit_GPIO");
@@ -26,7 +27,7 @@ int main(int argc, char* argv[]) {
     PyObject* pSIGINT = PyObject_GetAttrString(pSignal, (char*)"SIGINT"); // signal.SIGINT
     PyObject* pSIG_DFL = PyObject_GetAttrString(pSignal, (char*)"SIG_DFL"); // signal.SIG_DFL
     PyObject* pSignalFuncArgs = PyTuple_Pack(2, pSIGINT, pSIG_DFL); // (signal.SIGINT, signal.SIG_DFL)
-    PyObject* pSignalCall = PyObject_CallObject(pSignalFunc, pSignalFuncArgs);
+    PyObject* pSignalCall = PyObject_CallObject(pSignalFunc, pSignalFuncArgs); // signal.signal(signal.SIGINT, signal.SIG_DFL);
 
     PyObject* pUseFT232H = PyObject_GetAttrString(pFT232H, (char*)"use_FT232H"); // FT232H.use_FT232H();
     PyObject* pft232h = PyObject_GetAttrString(pFT232H, (char*)"FT232H"); // ft232h = FT232H.FT232H;
@@ -41,14 +42,21 @@ int main(int argc, char* argv[]) {
     PyObject* pC0SetupFuncArgs = PyTuple_Pack(2, PyInt_FromLong(8), pGPIOout); // (8, GPIO.OUT); // C0
     PyObject* pD7Setup = PyObject_CallObject(pSetupFunc, pD7SetupFuncArgs); // ft232h.setup(7, GPIO.IN); // D7 
     PyObject* pC0Setup = PyObject_CallObject(pSetupFunc, pC0SetupFuncArgs); // ft232h.setup(8, GPIO.OUT); // C0
-    PyObject* pOutput = PyObject_GetAttrString(pft232h, (char*)"output");
+    PyObject* pOutput = PyObject_GetAttrString(pft232h, (char*)"output"); // ft232h.output(...);
 
-    
+    PyObject* pC0HighArgs = PyTuple_Pack(2, PyInt_FromLong(8), pGPIOhigh); // (8, GPIO.HIGH)        
+    PyObject* pC0HighFunc = PyObject_CallObject(pOutput, pC0HighArgs); // ft232h.output(8, GPIO.HIGH)
+PyObject* sss = PyObject_Repr(pC0HighArgs);
+const char* ssss = PyString_AsString(sss);
+cout << "ssss " << ssss << endl;
+
 
     while(1) {
-        PyObject* pC0HighArgs = PyTuple_Pack(2, PyInt_FromLong(8), pGPIOhigh); // (8, GPIO.HIGH)
+        PyObject* pC0HighArgs = PyTuple_Pack(2, PyInt_FromLong(8), pGPIOhigh); // (8, GPIO.HIGH)        
         PyObject* pC0HighFunc = PyObject_CallObject(pOutput, pC0HighArgs); // ft232h.output(8, GPIO.HIGH)
 
+
+        sleep(1);
         PyObject* pSleepCall = PyObject_CallObject(pSleepFunc, pSleepFuncArgs);
 
         PyObject* pC0LowArgs = PyTuple_Pack(2, PyInt_FromLong(8), pGPIOlow); // (8, GPIO.LOW)
