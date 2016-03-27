@@ -1,0 +1,22 @@
+1. 如何定義每個相機是什麼用途 
+   cin
+
+2. FlyCapture2 SDK
+   2.1 GetNumOfCameras
+   2.2 for-loop -> 1 to numCameras
+       GetCameraFromIndex 從這裡取得第 i 個的 guid
+       Connect 由取得的 guid 去作連線，並放入 ppCameras[i]
+       GetCameraInfo 由 ppCameras[i] 取得相機資訊
+       StopCapture 停止擷取影像
+       Disconnect 斷開連結
+
+3. 如果現在已經定義好了每一個 id 的相機是作什麼用的：
+   111111 頭
+   222222 尾
+   333333 混料1
+   444444 混料2
+   555555 混料3
+
+   guid camHeadGuid = 111111
+   guid camTailGuid = 222222
+   list<guid> camMixGuid = {333333, 444444, 555555}
