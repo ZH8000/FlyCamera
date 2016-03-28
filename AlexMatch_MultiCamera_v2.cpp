@@ -347,6 +347,7 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
     namedWindow(ss.str(), WINDOW_NORMAL);
 
     // 2. for Camera settings
+/*
     ss.str(std::string());
     ss << win_setting << id;
     namedWindow(ss.str(), WINDOW_NORMAL);
@@ -359,6 +360,7 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
     // shutter
     createTrackbar(shut_title, ss.str(), &(prop->shutterOnOff), 1, on_slider_shutterOnOff, prop);
     createTrackbar(shut_value, ss.str(), &(prop->shutterValue), 1590, on_slider_shutterValue, prop);
+*/
 
     // 3. for OpenCV features
     ss.str(std::string());
@@ -376,6 +378,7 @@ inline void updateTrackbars(Camera* camera, CameraProp* prop) {
     const unsigned int sk_numProps = 18;
 
     // for Camera settings
+/*
     stringstream ss;
     ss.str(std::string());
     ss << win_setting << prop->camId;
@@ -424,6 +427,7 @@ inline void updateTrackbars(Camera* camera, CameraProp* prop) {
 //            cout << prop->camId << " TEMPERATURE " << camProp.valueA << " K" << endl;
         }
     }
+*/
     
     // for OpenCV settings
     stringstream ss_cv;

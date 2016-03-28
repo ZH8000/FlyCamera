@@ -20,3 +20,8 @@
    guid camHeadGuid = 111111
    guid camTailGuid = 222222
    list<guid> camMixGuid = {333333, 444444, 555555}
+
+4. 先做頭尾一起
+   4.1 用 for-loop 去監控訊號，然後再一個個相機去呼叫。
+
+
