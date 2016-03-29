@@ -31,8 +31,8 @@ while True:
 	# Read the input on pin D7 and print out if it's high or low.
 	level = ft232h.input(7)
 	if level == GPIO.LOW:
-		print '#2 Pin D7 is LOW! Send C0 LOW!'
+		print '#2 Pin D7 is HIGH! Send C0 HIGH!'
 		ft232h.output(8, GPIO.HIGH)
 	else:
-		print '#2 Pin D7 is HIGH! Send C0 HIGH!'
+		print '#2 Pin D7 is LOW! Send C0 LOW!'
 		ft232h.output(8, GPIO.LOW)

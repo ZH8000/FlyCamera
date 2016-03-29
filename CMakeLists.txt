@@ -56,5 +56,5 @@ add_executable( app AlexMatch_MultiCamera_v2.cpp CommonFlySDK.cpp )
 SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 #SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall" )
 
-target_link_libraries( app ${OpenCV_LIBS} ${PYTHON_LIBRARIES} -lflycapture tesseract mpsse )
+target_link_libraries( app ${OpenCV_LIBS} ${PYTHON_LIBRARIES} -lflycapture tesseract -lmpsse )
 #target_link_libraries( app ${OpenCV_LIBS} -lflycapture tesseract ${GTK2_LIBRARIES} )

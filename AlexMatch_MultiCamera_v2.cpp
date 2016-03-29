@@ -1,9 +1,11 @@
 #include "AlexMatch_MultiCamera_v2.hpp"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <mpsse.h>
-#include <unistd.h>
+extern "C" {
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <mpsse.h>
+	#include <unistd.h>
+}
 
 using namespace std;
 using namespace cv;
@@ -46,13 +48,22 @@ int main(int argc, char** argv) {
 
     ppCameras = new Camera*[numCameras];
 
+/*
 	// for Adafruit FT232H
 	struct mpsse_context *io = NULL;
 	int retval = EXIT_FAILURE;
-	int PIN = GPIOH0;
+	int PIN_OUT = GPIOH0;
+	int PIN_IN =  GPIOL3;
 	// 開啟 FT232H Device
 	io = MPSSE(GPIO, 0, 0);
-    
+	if(io && io->open) {
+		cout << "Succeed to open MPSSE: " << ErrorString(io) << endl;
+		PinLow(io, PIN_OUT);
+	} else {
+		cout << "Failed to open MPSSE: " << ErrorString(io) << endl;
+	}
+*/
+
     // for AKAXE matching
     //FileStorage fs("../H1to3p.xml", FileStorage::READ);
     //fs.getFirstTopLevelNode() >> homography;
@@ -149,7 +160,6 @@ int main(int argc, char** argv) {
 
     char c;
 	int oldValue = 0;
-	int getSignal = 0;
     int count = 0;
     while ( true ) {
         c = waitKey(20);
@@ -200,34 +210,22 @@ int main(int argc, char** argv) {
 		string line;
 		getline(infile, line);
 		
-		//for (string line; getline(infile, line);) {
-			if (line == "0") {              // no signal now,
-				oldValue = 0;               // because it "no signal now", change oldValue = 0
-				getSignal = 1;              // change getSignal = 1, let Python start
 
-				ofstream outfile("../gpio_out_cpp");
-				if (outfile.is_open()) {
-					outfile << "1" << endl;
-					outfile.close();
-				}
-			} else if (line == "1") {       // has signal now,
-				if (oldValue == 0) {        // no signal before,
-					c = 's';                // do algorithms
-					oldValue = 1;           // change oldValue = 1;
-				} else if (oldValue == 1) { // had signal before...
-					// no action            // because it already get signal before, no action
-				}
-				getSignal = 0;			    // already get the signal, change getSignal = 0, tell Python pause
-				ofstream outfile("../gpio_out_cpp");
-				if (outfile.is_open()) {
-					outfile << "0" << endl;
-					outfile.close();
-				}
+		if (line == "0") {              // no signal now,
+			oldValue = 0;               // because it "no signal now", change oldValue = 0
+		} else if (line == "1") {       // has signal now,
+			if (oldValue == 0) {        // no signal before,
+				c = 's';                // do algorithms
+				oldValue = 1;           // change oldValue = 1;
+			} else if (oldValue == 1) { // had signal before...
 			}
-			//cout << line << endl;
-		//}
-
-				
+			
+		}
+/*
+//		PinHigh(io, PIN_OUT);
+		int gpio_in_status = PinState(io, PIN_IN, -1);
+		cout << "gpio_in_status " << gpio_in_status << endl;
+*/
 
         for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
         
@@ -263,8 +261,15 @@ int main(int argc, char** argv) {
                     threshold(image, image, propCVMap[*camIdIt].binaryThresh, (propCVMap[*camIdIt].binaryMax+150), CV_THRESH_BINARY);
                 }
             }
-            
+
             if( c == 's') {
+				ofstream outfile("../gpio_out_cpp");
+				if (outfile.is_open() ) {
+					outfile << 0 << endl;
+					outfile.close();
+				}
+				unsigned int sec = 3;
+				usleep(sec);
                 if(sampledImagesMap[*camIdIt].size() < sampleImagesSize) { // NOT compare
                     sampledImagesMap[*camIdIt].push_back(image);
                     //cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
@@ -296,12 +301,10 @@ int main(int argc, char** argv) {
                     struct tm * now_e = localtime( &t_e );
                     cout << "********" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
                 }
-				getSignal = 1;              // change getSignal = 1, let Python start
-
-				ofstream outfile("../gpio_out_cpp");
-				if (outfile.is_open()) {
-					outfile << "1" << endl;
-					outfile.close();
+				ofstream outfile2("../gpio_out_cpp");
+				if (outfile2.is_open() ) {
+					outfile2 << 1 << endl;
+					outfile2.close();
 				}
             }
 
@@ -310,7 +313,7 @@ int main(int argc, char** argv) {
             imshow(ss.str(), image);
         }
     }
-
+//	Close(io);
     return 0;
 }
     
