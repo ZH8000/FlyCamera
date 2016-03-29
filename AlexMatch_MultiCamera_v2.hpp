@@ -4,12 +4,13 @@
 #include <FlyCapture2.h>
 
 #include <ctime>
-#include <vector>
+#include <fstream>
 #include <iostream>
 #include <list>
 #include <map>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>

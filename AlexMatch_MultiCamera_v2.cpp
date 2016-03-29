@@ -1,5 +1,10 @@
 #include "AlexMatch_MultiCamera_v2.hpp"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpsse.h>
+#include <unistd.h>
+
 using namespace std;
 using namespace cv;
 using namespace FlyCapture2;
@@ -40,6 +45,13 @@ int main(int argc, char** argv) {
     }
 
     ppCameras = new Camera*[numCameras];
+
+	// for Adafruit FT232H
+	struct mpsse_context *io = NULL;
+	int retval = EXIT_FAILURE;
+	int PIN = GPIOH0;
+	// 開啟 FT232H Device
+	io = MPSSE(GPIO, 0, 0);
     
     // for AKAXE matching
     //FileStorage fs("../H1to3p.xml", FileStorage::READ);
@@ -136,6 +148,8 @@ int main(int argc, char** argv) {
     }
 
     char c;
+	int oldValue = 0;
+	int getSignal = 0;
     int count = 0;
     while ( true ) {
         c = waitKey(20);
@@ -174,12 +188,54 @@ int main(int argc, char** argv) {
             cout << "-------Reset Sampled Images-------" << endl;
             
         }
-        
-        for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
-        
+/* FIXME disable for demo
+		for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
             // 1. get camera's prop and update
             sdk.getCameraProp(cameraMap[*camIdIt], *camIdIt, &propMap[*camIdIt]);
             updateTrackbars(cameraMap[*camIdIt], &propMap[*camIdIt]);
+		}
+ */
+
+		ifstream infile("../gpio_in_python");
+		string line;
+		getline(infile, line);
+		
+		//for (string line; getline(infile, line);) {
+			if (line == "0") {              // no signal now,
+				oldValue = 0;               // because it "no signal now", change oldValue = 0
+				getSignal = 1;              // change getSignal = 1, let Python start
+
+				ofstream outfile("../gpio_out_cpp");
+				if (outfile.is_open()) {
+					outfile << "1" << endl;
+					outfile.close();
+				}
+			} else if (line == "1") {       // has signal now,
+				if (oldValue == 0) {        // no signal before,
+					c = 's';                // do algorithms
+					oldValue = 1;           // change oldValue = 1;
+				} else if (oldValue == 1) { // had signal before...
+					// no action            // because it already get signal before, no action
+				}
+				getSignal = 0;			    // already get the signal, change getSignal = 0, tell Python pause
+				ofstream outfile("../gpio_out_cpp");
+				if (outfile.is_open()) {
+					outfile << "0" << endl;
+					outfile.close();
+				}
+			}
+			//cout << line << endl;
+		//}
+
+				
+
+        for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
+        
+            // 1. get camera's prop and update
+/* FIXME disable for demo
+            sdk.getCameraProp(cameraMap[*camIdIt], *camIdIt, &propMap[*camIdIt]);
+            updateTrackbars(cameraMap[*camIdIt], &propMap[*camIdIt]);
+*/
 
             // 2. get image
             Image rawImage;
@@ -218,7 +274,7 @@ int main(int argc, char** argv) {
                     // print start time
                     time_t t_s = time(0);
                     struct tm * now = localtime( &t_s );
-                    cout << "****************" << *camIdIt << " START " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << endl;
+                    cout << "********" << *camIdIt << " START " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
                 
                     clock_t start, end;
                     double duration;
@@ -238,8 +294,15 @@ int main(int argc, char** argv) {
                     // print end time
                     time_t t_e = time(0);
                     struct tm * now_e = localtime( &t_e );
-                    cout << "****************" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "****************" << endl;
+                    cout << "********" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
                 }
+				getSignal = 1;              // change getSignal = 1, let Python start
+
+				ofstream outfile("../gpio_out_cpp");
+				if (outfile.is_open()) {
+					outfile << "1" << endl;
+					outfile.close();
+				}
             }
 
             stringstream ss;
@@ -347,7 +410,7 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
     namedWindow(ss.str(), WINDOW_NORMAL);
 
     // 2. for Camera settings
-/*
+/* FIXME disable for demo
     ss.str(std::string());
     ss << win_setting << id;
     namedWindow(ss.str(), WINDOW_NORMAL);
@@ -378,7 +441,7 @@ inline void updateTrackbars(Camera* camera, CameraProp* prop) {
     const unsigned int sk_numProps = 18;
 
     // for Camera settings
-/*
+/* FIXME - disable for demo
     stringstream ss;
     ss.str(std::string());
     ss << win_setting << prop->camId;
