@@ -1,6 +1,4 @@
 #!/bin/bash
-echo "Hello World! \a \n"
-
 check_gpio_file() {
     local file_in_python="gpio_in_python"
     touch "$file_in_python"
@@ -18,4 +16,10 @@ check_gpio_file() {
 
 check_gpio_file
 
-release/app
+release/app &
+
+echo "鍵入 OK 開始啟動機台"
+read INPUT
+echo $INPUT
+# should add sudo python
+#echo am9km5f7### | sudo -S python gpio_work_v2.py
