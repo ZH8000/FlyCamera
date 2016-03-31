@@ -15,41 +15,38 @@ ft232h = FT232H.FT232H()
 # Note that pin numbers 0 to 15 map to pins D0 to D7 then C0 to C7 on the board.
 ft232h.setup(7, GPIO.IN)   # Make pin D7 a digital input.
 ft232h.setup(8, GPIO.OUT)  # Make pin C0 a digital output.
-ft232h.setup(11, GPIO.OUT)  # Make pin C3 a digital output.
+ft232h.setup(11, GPIO.OUT)  # Make pin C3 a digital output. 
+ft232h.setup(12, GPIO.OUT)  # Make pin C4 a digital output. (Bad product)
+ft232h.setup(13, GPIO.OUT)  # Make pin C5 a digital output. (Good product)
 
 oldValue = 0 # no signal
+
+# init file
+file = open("gpio_in_python", "w")
+file.write("0")
+file.close()
+
 # Loop turning the LED on and off and reading the input state.
 print 'Press Ctrl-C to quit.'
 while True:
-	# Set pin C0 to a high/low level so the LED turns on/off.
-	#ft232h.output(8, GPIO.LOW)
-	#time.sleep(1)
-	#ft232h.output(8, GPIO.HIGH)
-	#time.sleep(1)
-
-	# Read the input on pin D7 and print out if it's high or low.
-	#file = open("gpio_out_cpp", "r")
-	#cppState = file.readline();
-#	if data == "1\n":
-#		print "gpio_out_cpp " + data
-#	else:
-#		print "gpio_out_cpp " + data
-	#print "gpio_out_cpp " + cppState
-	# get signal from PLC
-	#if cppState == "1\n":
+	file = open("gpio_result_cpp", "r");
+	result = file.readline()
+	if result == "0\n":
+		print 'Bad product'
+		ft232h.output(12, GPIO.HIGH);
 
 	file = open("gpio_out_cpp", "r")
 	cppState = file.readline()
-	if cppState == "1\n":
-		print 'HIGHHIGHHIGHHIGHHIGHHIGHHIGHHIGHHIGHHIGHHIGH'
+	if cppState == "1\n": # move the machine
+		print 'HIGH'
 		ft232h.output(11, GPIO.HIGH)
 	else:
-		print 'LOWLOWLOWLOWLOWLOWLOWLOWLOWLOWLOWLOWLOWLOWLOW'
+		print 'LOW'       # stop the machine
 		ft232h.output(11, GPIO.LOW)
 
 	level = ft232h.input(7)
 	if level == GPIO.LOW: # get low, because PLC pull high
-		print 'Pin D7 is LOW! ~~~~~~~~~~~~~~~~~~~~~~~~'
+		print 'Pin D7 is LOW'
 		if oldValue == 1:  # if the old is 1, no action
 			print "Get old signal 1"
 		else:              # if the old isn't 1, refresh
@@ -59,8 +56,8 @@ while True:
 			file.write("1")
 			file.close()
 			ft232h.output(8, GPIO.HIGH)
-	else:                  # get high, no PLC no signal
-		print 'Pin D7 is HIGH! ~~~~~~~~~~~~~~~~~~~~~~~~'
+	else:                  # get high, because PLC pull low
+		print 'Pin D7 is HIGH'
 		if oldValue == 0:  # if the old is 0, no action
 			print "Get old signal 0"
 		else:
