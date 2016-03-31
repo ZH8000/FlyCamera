@@ -1,18 +1,19 @@
 #include "AlexMatch_MultiCamera_v2.hpp"
 
 extern "C" {
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <mpsse.h>
-	#include <unistd.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <mpsse.h>
+    #include <unistd.h>
 }
 
 using namespace std;
 using namespace cv;
 using namespace FlyCapture2;
 
-int sampleImagesFlag = 0;
-const int sampleImagesSize = 10;
+//int sampleImagesFlag = 0;
+unsigned int match_result = 1;
+const int sampleImagesSize = 7;
 const Mode k_fmt7Mode = MODE_0;
 const PixelFormat k_fmt7PixFmt = PIXEL_FORMAT_MONO8;
 map<unsigned int, Camera*> cameraMap;
@@ -30,9 +31,9 @@ Camera** ppCameras;
 unsigned int numCameras;
 
 int main(int argc, char** argv) {
-    cout << "Press 'q' to quit" << endl;
-    cout << "Press 's' to start sampling" << endl;
-    cout << "Press 'r' to reset sample" << endl;
+    cout << "按下 'ESC' 離開相機程式" << endl;
+    cout << "按下 's' 擷取樣本" << endl;
+    cout << "按下 'r' 清除樣本" << endl;
 
     CommonFlySDK sdk;
 
@@ -49,20 +50,26 @@ int main(int argc, char** argv) {
     ppCameras = new Camera*[numCameras];
 
 /*
-	// for Adafruit FT232H
-	struct mpsse_context *io = NULL;
-	int retval = EXIT_FAILURE;
-	int PIN_OUT = GPIOH0;
-	int PIN_IN =  GPIOL3;
-	// 開啟 FT232H Device
-	io = MPSSE(GPIO, 0, 0);
-	if(io && io->open) {
-		cout << "Succeed to open MPSSE: " << ErrorString(io) << endl;
-		PinLow(io, PIN_OUT);
-	} else {
-		cout << "Failed to open MPSSE: " << ErrorString(io) << endl;
-	}
+    // for Adafruit FT232H
+    struct mpsse_context *io = NULL;
+    int retval = EXIT_FAILURE;
+    int PIN_OUT = GPIOH0;
+    int PIN_IN =  GPIOL3;
+    // 開啟 FT232H Device
+    io = MPSSE(GPIO, 0, 0);
+    if(io && io->open) {
+        cout << "Succeed to open MPSSE: " << ErrorString(io) << endl;
+        PinLow(io, PIN_OUT);
+    } else {
+        cout << "Failed to open MPSSE: " << ErrorString(io) << endl;
+    }
 */
+    // init file
+    ofstream outfile0("../gpio_out_cpp");
+    if (outfile0.is_open() ) {
+        outfile0 << 1 << endl;
+        outfile0.close();
+    }
 
     // for AKAXE matching
     //FileStorage fs("../H1to3p.xml", FileStorage::READ);
@@ -94,7 +101,8 @@ int main(int argc, char** argv) {
             PrintError( error );
             return -1;
         }
-        sdk.PrintCameraInfo( &camInfo );
+        // FIXME U-Shine disable
+        //sdk.PrintCameraInfo( &camInfo );
         cameraList.push_back(camInfo.serialNumber);
         cameraMap[camInfo.serialNumber] = ppCameras[i];
         
@@ -125,7 +133,8 @@ int main(int argc, char** argv) {
             PrintError(error);
             return -1;
         }
-        sdk.PrintFormat7Capabilities(fmt7Info);
+        // FIXME U-Shine disable
+        // sdk.PrintFormat7Capabilities(fmt7Info);
         // 3.2 validate Format7ImageSettings
         Format7ImageSettings fmt7ImageSettings;
         fmt7ImageSettings.mode = k_fmt7Mode;
@@ -159,7 +168,7 @@ int main(int argc, char** argv) {
     }
 
     char c;
-	int oldValue = 0;
+    int oldValue = 0;
     int count = 0;
     while ( true ) {
         c = waitKey(20);
@@ -194,39 +203,46 @@ int main(int argc, char** argv) {
                 }
             }
             
-            sampleImagesFlag = 0;
+            //sampleImagesFlag = 0;
             cout << "-------Reset Sampled Images-------" << endl;
             
         }
 /* FIXME disable for demo
-		for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
+        for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
             // 1. get camera's prop and update
             sdk.getCameraProp(cameraMap[*camIdIt], *camIdIt, &propMap[*camIdIt]);
             updateTrackbars(cameraMap[*camIdIt], &propMap[*camIdIt]);
-		}
+        }
  */
 
-		ifstream infile("../gpio_in_python");
-		string line;
-		getline(infile, line);
-		
+        ifstream infile("../gpio_in_python");
+        string line;
+        getline(infile, line);
+        
 
-		if (line == "0") {              // no signal now,
-			oldValue = 0;               // because it "no signal now", change oldValue = 0
-		} else if (line == "1") {       // has signal now,
-			if (oldValue == 0) {        // no signal before,
-				c = 's';                // do algorithms
-				oldValue = 1;           // change oldValue = 1;
-			} else if (oldValue == 1) { // had signal before...
-			}
-			
-		}
+        if (line == "0") {              // no signal now,
+            oldValue = 0;               // because it "no signal now", change oldValue = 0
+        } else if (line == "1") {       // has signal now,
+            if (oldValue == 0) {        // no signal before,
+                c = 's';                // do algorithms
+                oldValue = 1;           // change oldValue = 1;
+                unsigned int sec = 4 * 1000 * 1000;
+                usleep(sec);
+            } else if (oldValue == 1) { // had signal before...
+            }
+        }
 /*
-//		PinHigh(io, PIN_OUT);
-		int gpio_in_status = PinState(io, PIN_IN, -1);
-		cout << "gpio_in_status " << gpio_in_status << endl;
+//        PinHigh(io, PIN_OUT);
+        int gpio_in_status = PinState(io, PIN_IN, -1);
+        cout << "gpio_in_status " << gpio_in_status << endl;
 */
-
+        // init match_result
+        match_result = 1;
+        ofstream resultFile("../gpio_result_cpp");
+        if (resultFile.is_open() ) {
+            resultFile << match_result << endl;
+            resultFile.close();
+        }
         for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
         
             // 1. get camera's prop and update
@@ -252,6 +268,11 @@ int main(int argc, char** argv) {
             // resize to smaller size
             Size size = Size(640, 480);
             resize(image, image, size);
+            image = image(
+                        Rect(propCVMap[*camIdIt].leftValue, 
+                        propCVMap[*camIdIt].topValue, 
+                        propCVMap[*camIdIt].rightValue - propCVMap[*camIdIt].leftValue, 
+                        propCVMap[*camIdIt].bottomValue - propCVMap[*camIdIt].topValue));
             
             // (INVERSE) BINARY ON/OFF
             if (propCVMap[*camIdIt].binaryOnOff == 1) {
@@ -263,13 +284,11 @@ int main(int argc, char** argv) {
             }
 
             if( c == 's') {
-				ofstream outfile("../gpio_out_cpp");
-				if (outfile.is_open() ) {
-					outfile << 0 << endl;
-					outfile.close();
-				}
-				unsigned int sec = 3;
-				usleep(sec);
+                ofstream outfile("../gpio_out_cpp");
+                if (outfile.is_open() ) {
+                    outfile << 0 << endl;
+                    outfile.close();
+                }
                 if(sampledImagesMap[*camIdIt].size() < sampleImagesSize) { // NOT compare
                     sampledImagesMap[*camIdIt].push_back(image);
                     //cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
@@ -289,6 +308,10 @@ int main(int argc, char** argv) {
                     for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
                         int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
                         //cout << idx << endl;
+                        if (*camIdIt == 16043260) {
+                            cout << "ignore" << endl;
+                            break;
+                        }
                         Match(*i, idx, *camIdIt);
                     }
                     
@@ -301,11 +324,16 @@ int main(int argc, char** argv) {
                     struct tm * now_e = localtime( &t_e );
                     cout << "********" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
                 }
-				ofstream outfile2("../gpio_out_cpp");
-				if (outfile2.is_open() ) {
-					outfile2 << 1 << endl;
-					outfile2.close();
-				}
+                ofstream outfile2("../gpio_out_cpp");
+                if (outfile2.is_open() ) {
+                    outfile2 << 1 << endl;
+                    outfile2.close();
+                }
+                ofstream resultFile("../gpio_result_cpp");
+                if (resultFile.is_open() ) {
+                    resultFile << match_result << endl;
+                    resultFile.close();
+                }
             }
 
             stringstream ss;
@@ -313,7 +341,7 @@ int main(int argc, char** argv) {
             imshow(ss.str(), image);
         }
     }
-//	Close(io);
+//    Close(io);
     return 0;
 }
     
@@ -381,9 +409,15 @@ inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
     drawMatches(sampledImage, inliers1, targetImagesMap[camId], inliers2, good_matches, res);
     Point pt = Point(100, 100);
     if (matched1.size() >= successMatches) {
-        putText(res, "Succeed!", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+        stringstream ss;
+        ss << "OOOOO " << matched1.size();
+        putText(res, ss.str(), pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+        match_result *= 1;
     } else {
-        putText(res, "Failed", pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+        stringstream ss;
+        ss << "XXXXX " << matched1.size();
+        putText(res, ss.str(), pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
+        match_result *= 0;
     }
     //imwrite("res.png", res);
     //namedWindow(win_akaze, WINDOW_NORMAL);
@@ -411,6 +445,10 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
     ss.str(std::string());
     ss << win_title << id;
     namedWindow(ss.str(), WINDOW_NORMAL);
+    createTrackbar(left_title, ss.str(), &(propCV->leftValue), 640);
+    createTrackbar(right_title, ss.str(), &(propCV->rightValue), 640);
+    createTrackbar(top_title, ss.str(), &(propCV->topValue), 480);
+    createTrackbar(bottom_title, ss.str(), &(propCV->bottomValue), 480);
 
     // 2. for Camera settings
 /* FIXME disable for demo
@@ -429,12 +467,12 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
 */
 
     // 3. for OpenCV features
-    ss.str(std::string());
-    ss << win_opencv << id;
-    namedWindow(ss.str(), WINDOW_NORMAL);
+    //ss.str(std::string());
+    //ss << win_opencv << id;
+    //namedWindow(ss.str(), WINDOW_NORMAL);
     createTrackbar(bina_title,   ss.str(), &(propCV->binaryOnOff), 1, on_slider_binaryOnOff, propCV);
-    createTrackbar(binv_title,   ss.str(), &(propCV->binaryInvOnOff), 1);
-    createTrackbar(bina_max,     ss.str(), &(propCV->binaryMax), 150, on_slider_binaryMax, propCV);
+    //createTrackbar(binv_title,   ss.str(), &(propCV->binaryInvOnOff), 1);
+    //createTrackbar(bina_max,     ss.str(), &(propCV->binaryMax), 150, on_slider_binaryMax, propCV);
     createTrackbar(bina_thresh,  ss.str(), &(propCV->binaryThresh), 150, on_slider_binaryThresh, propCV);
     createTrackbar(succ_matches, ss.str(), &successMatches, 4000);
     // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
@@ -581,6 +619,11 @@ void initOpenCVProp(unsigned int camId, OpenCVProp *propCV) {
     // propCV->oldBlurValue = 0;
     propCV->successMatches = 100;      // AKAZE matches
     // propCV->ocrOnOff = 0;              // OCR
+
+    propCV->leftValue = 0;
+    propCV->rightValue = 640;
+    propCV->topValue = 0;
+    propCV->bottomValue = 480;
 }
 // EXPOSURE -start----------------------------
 void on_slider_exposureOnOff(int, void* userdata) {

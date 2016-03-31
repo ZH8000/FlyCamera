@@ -15,6 +15,12 @@ struct OpenCVProp {
     
     // AKAZE matches
     int successMatches;
+
+	// screen size
+	int leftValue;
+	int rightValue;
+	int topValue;
+	int bottomValue;
 };
 
 #endif

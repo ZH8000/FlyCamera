@@ -13,10 +13,9 @@
 
 using namespace FlyCapture2;
 using namespace std;
-//using namespace cv;
 
 CommonFlySDK::CommonFlySDK() {
-    cout << "CommonFlySDK constructor" << endl;
+    //cout << "CommonFlySDK constructor" << endl;
 }
 
 CommonFlySDK::~CommonFlySDK() {

@@ -65,6 +65,10 @@ const char* bina_thresh = "影像二元化閥值";            // binarization th
 const char* succ_matches = "辦別成功最低Match值";
 // const char* tess_title = "單張文字辨識 trigger";
 const char* sampled_title = " 樣本 ";
+const char* left_title = "左邊界";
+const char* right_title = "右邊界";
+const char* top_title = "上邊界";
+const char* bottom_title = "下邊界";
 
 void createTrackbars(unsigned int id, CameraProp* prop, OpenCVProp* propCV);
 inline void updateTrackbars(FlyCapture2::Camera* camera, CameraProp* prop);
