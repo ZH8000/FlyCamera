@@ -16,7 +16,8 @@ check_gpio_file() {
 
 check_gpio_file
 
-release/app &
+#release/app &
+release/app
 
 echo "鍵入 OK 開始啟動機台"
 read INPUT

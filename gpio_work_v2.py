@@ -34,6 +34,11 @@ while True:
 	if result == "0\n":
 		print 'Bad product'
 		ft232h.output(12, GPIO.HIGH);
+		ft232h.output(13, GPIO.LOW);
+	if result == "1\n":
+		print 'Good product'
+		ft232h.output(13, GPIO.HIGH);
+		ft232h.output(12, GPIO.LOW);
 
 	file = open("gpio_out_cpp", "r")
 	cppState = file.readline()

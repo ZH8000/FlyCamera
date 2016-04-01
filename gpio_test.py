@@ -23,7 +23,7 @@ while True:
 	# Set pin C0 to a high level so the LED turns on.
 	ft232h.output(11, GPIO.HIGH)
 	# Sleep for 1 second.
-	time.sleep(5)
+	time.sleep(3)
     # Read the input on pin D7 and print out if it's high or low.
 	level = ft232h.input(7)
 	if level == GPIO.LOW:
@@ -34,7 +34,7 @@ while True:
 	# Set pin C0 to a low level so the LED turns off.
 	ft232h.output(11, GPIO.LOW)
 	# Sleep for 1 second.
-	time.sleep(5)
+	time.sleep(3)
 	# Read the input on pin D7 and print out if it's high or low.
 	level = ft232h.input(7)
 	if level == GPIO.LOW:

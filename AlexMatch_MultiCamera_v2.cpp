@@ -13,7 +13,8 @@ using namespace FlyCapture2;
 
 //int sampleImagesFlag = 0;
 unsigned int match_result = 1;
-const int sampleImagesSize = 7;
+unsigned int counting = 0;
+const int sampleImagesSize = 5;
 const Mode k_fmt7Mode = MODE_0;
 const PixelFormat k_fmt7PixFmt = PIXEL_FORMAT_MONO8;
 map<unsigned int, Camera*> cameraMap;
@@ -183,7 +184,7 @@ int main(int argc, char** argv) {
             delete [] ppCameras;
             return 0;
         }
-        
+
         if ( c == 'r') {
             /*
             for(unsigned int x = 0; x < numCameras; x++) {
@@ -226,8 +227,9 @@ int main(int argc, char** argv) {
             if (oldValue == 0) {        // no signal before,
                 c = 's';                // do algorithms
                 oldValue = 1;           // change oldValue = 1;
-                unsigned int sec = 4 * 1000 * 1000;
-                usleep(sec);
+                cout << "SLEEP 2 SEC to wait it coming..." << endl;
+                sleep(2);
+                cout << "OVER OVER OVER OVER OVER OVER OVER" << endl;
             } else if (oldValue == 1) { // had signal before...
             }
         }
@@ -276,11 +278,7 @@ int main(int argc, char** argv) {
             
             // (INVERSE) BINARY ON/OFF
             if (propCVMap[*camIdIt].binaryOnOff == 1) {
-                if (propCVMap[*camIdIt].binaryInvOnOff == 1) {
-                    threshold(image, image, propCVMap[*camIdIt].binaryThresh, (propCVMap[*camIdIt].binaryMax+150), CV_THRESH_BINARY_INV);
-                } else {
-                    threshold(image, image, propCVMap[*camIdIt].binaryThresh, (propCVMap[*camIdIt].binaryMax+150), CV_THRESH_BINARY);
-                }
+                threshold(image, image, propCVMap[*camIdIt].binaryThresh, (propCVMap[*camIdIt].binaryMax+150), CV_THRESH_BINARY);
             }
 
             if( c == 's') {
@@ -288,11 +286,16 @@ int main(int argc, char** argv) {
                 if (outfile.is_open() ) {
                     outfile << 0 << endl;
                     outfile.close();
+                    cout << "write gpio_out_cpp = 0, let machine pause." << endl;
                 }
                 if(sampledImagesMap[*camIdIt].size() < sampleImagesSize) { // NOT compare
                     sampledImagesMap[*camIdIt].push_back(image);
                     //cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
                     cout << "-----" << *camIdIt << " Get Sampled Image #" << sampledImagesMap[*camIdIt].size() << "-----" << endl;
+                    stringstream ss;
+                    ss << *camIdIt << "_sample_img_" << sampledImagesMap[*camIdIt].size() << ".jpg";
+                    imwrite(ss.str(), image);
+                    
                 } else { // START compare!
                     image.copyTo(targetImagesMap[*camIdIt]);
                     // print start time
@@ -323,11 +326,14 @@ int main(int argc, char** argv) {
                     time_t t_e = time(0);
                     struct tm * now_e = localtime( &t_e );
                     cout << "********" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
-                }
+
+					sleep(3);
+                }				
                 ofstream outfile2("../gpio_out_cpp");
                 if (outfile2.is_open() ) {
                     outfile2 << 1 << endl;
                     outfile2.close();
+                    cout << "write gpio_out_cpp = 1, let machine resume." << endl;
                 }
                 ofstream resultFile("../gpio_result_cpp");
                 if (resultFile.is_open() ) {
@@ -427,6 +433,10 @@ inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
     namedWindow(ss.str(), WINDOW_NORMAL);
     imshow(ss.str(), res);
 
+    stringstream ss2;
+    ss2 << camId << "_sample_" << counting++ << ".jpg";
+    imwrite(ss2.str(), res);
+
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
     cout << camId << " Alex Matching Results #" << idx << endl;
     cout << "*******************************" << endl;
@@ -467,9 +477,9 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
 */
 
     // 3. for OpenCV features
-    //ss.str(std::string());
-    //ss << win_opencv << id;
-    //namedWindow(ss.str(), WINDOW_NORMAL);
+    ss.str(std::string());
+    ss << win_opencv << id;
+    namedWindow(ss.str(), WINDOW_NORMAL);
     createTrackbar(bina_title,   ss.str(), &(propCV->binaryOnOff), 1, on_slider_binaryOnOff, propCV);
     //createTrackbar(binv_title,   ss.str(), &(propCV->binaryInvOnOff), 1);
     //createTrackbar(bina_max,     ss.str(), &(propCV->binaryMax), 150, on_slider_binaryMax, propCV);
