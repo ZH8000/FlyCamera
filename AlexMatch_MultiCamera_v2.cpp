@@ -257,8 +257,9 @@ int main(int argc, char** argv) {
 
             // convert to OpenCV Mat
             unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();       
-            Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
+            Mat rawMat = Mat(rgbImage.GetRows(), rgbImage.GetCols(), CV_8UC3, rgbImage.GetData(),rowBytes);
 
+            Mat image = rawMat.clone();
             image = image(
                         Rect(propCVMap[*camIdIt].leftValue, 
                         propCVMap[*camIdIt].topValue, 
@@ -285,12 +286,8 @@ int main(int argc, char** argv) {
                     stringstream ss;
                     ss << *camIdIt << "_sample_img_" << sampledImagesMap[*camIdIt].size() << ".jpg";
                     imwrite(ss.str(), image);
-
-					imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
-                    
                 } else { // START compare!
-imshow("樣本again＃", *sampledImagesMap[*camIdIt].begin());
-
+counting = 0;
                     image.copyTo(targetImagesMap[*camIdIt]);
 
                     // print start time
@@ -314,8 +311,6 @@ imshow("樣本again＃", *sampledImagesMap[*camIdIt].begin());
                         }
                         Match(*i, idx, *camIdIt);
                     }
-					//imshow("asdf", *sampledImagesMap[*camIdIt].begin());
-                    
                     end = clock();
                     duration = (double)(end - start) / CLOCKS_PER_SEC;
                     cout << "Duration: "  << duration << endl;
@@ -373,11 +368,6 @@ inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
     //akaze->detectAndCompute(sampleImage, noArray(), kpts1, desc1);
     akaze->detectAndCompute(sampledImage, noArray(), kpts1, desc1);
     akaze->detectAndCompute(targetImagesMap[camId], noArray(), kpts2, desc2);
-
-	stringstream xx;
-	xx << "sampledImage " << idx;
-	imshow(xx.str(), sampledImage);
-	imshow("targetImagesMap", targetImagesMap[camId]);
 
     BFMatcher matcher(NORM_HAMMING);
     vector< vector<DMatch> > nn_matches;
