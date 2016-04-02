@@ -1,9 +1,6 @@
 #include "AlexMatch_MultiCamera_v2.hpp"
 
 extern "C" {
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <mpsse.h>
     #include <unistd.h>
 }
 
@@ -14,13 +11,13 @@ using namespace FlyCapture2;
 //int sampleImagesFlag = 0;
 unsigned int match_result = 1;
 unsigned int counting = 0;
-const int sampleImagesSize = 1;
+const int sampleImagesSize = 5;
 const Mode k_fmt7Mode = MODE_1;
 const PixelFormat k_fmt7PixFmt = PIXEL_FORMAT_MONO8;
 map<unsigned int, Camera*> cameraMap;
 map<unsigned int, CameraProp> propMap;
 map<unsigned int, OpenCVProp> propCVMap;
-map<unsigned int, vector<Mat> > sampledImagesMap;
+map<unsigned int, list<Mat> > sampledImagesMap;
 map<unsigned int, Mat> targetImagesMap;
 list<unsigned int> cameraList;
 
@@ -157,10 +154,6 @@ int main(int argc, char** argv) {
             PrintError( error );
             return -1;
         }
-
-		// 6. init map
-		// TODO
-		//sampledImagesMap.insert();
     }
 
     char c;
@@ -191,11 +184,13 @@ int main(int argc, char** argv) {
             list<unsigned int>::iterator ii;
             for(ii = cameraList.begin(); ii != cameraList.end(); ++ii) {
                 //cout << distance(cameraList.begin(), ii) << " "<< *ii<< endl;
-				for (std::vector<Mat>::iterator iter = sampledImagesMap[*ii].begin(); iter != sampledImagesMap[*ii].end(); ++iter) {
+/*
+				for (std::list<Mat>::iterator iter = sampledImagesMap[*ii].begin(); iter != sampledImagesMap[*ii].end(); ++iter) {
 					(*iter).release();
 				}
 				sampledImagesMap[*ii].clear();
-
+*/
+                sampledImagesMap[*ii].clear();
                 for (int x = 0; x < sampleImagesSize; x++) {
                     stringstream ss;
                     ss << *ii << sampled_title << x;
@@ -219,7 +214,7 @@ int main(int argc, char** argv) {
         string line;
         getline(infile, line);
 //		cout << "#0 is here segmentation fault?????????????????????? " << line << endl;
-        
+
 
         if (line == "0") {              // no signal now,
             oldValue = 0;               // because it "no signal now", change oldValue = 0
@@ -283,10 +278,6 @@ int main(int argc, char** argv) {
                     cout << "write gpio_out_cpp = 0, let machine pause." << endl;
                 }
                 if(sampledImagesMap[*camIdIt].size() < sampleImagesSize) { // NOT compare
-					// FIXME
-					if ( sampledImagesMap[*camIdIt].size() == 0 ) {
-						sampledImagesMap.insert( std::pair<unsigned int, vector<Mat>>(*camIdIt, vector<Mat> list(image)) );
-					}
                     sampledImagesMap[*camIdIt].push_back(image);
 
                     //cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
@@ -298,12 +289,10 @@ int main(int argc, char** argv) {
 					imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
                     
                 } else { // START compare!
-imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
-/*
-                    image.copyTo(targetImagesMap[*camIdIt]);
-					imshow("比較", image);
+imshow("樣本again＃", *sampledImagesMap[*camIdIt].begin());
 
-					imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
+                    image.copyTo(targetImagesMap[*camIdIt]);
+
                     // print start time
                     time_t t_s = time(0);
                     struct tm * now = localtime( &t_s );
@@ -313,22 +302,19 @@ imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
                     double duration;
                     start = clock();
                 
-                    // list<Mat>::iterator i;
+                    list<Mat>::iterator i;
                     //for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
-					for(int x = 0; x < sampledImagesMap[*camIdIt].size(); x++) {
-                        //int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
-						int idx = x;
+					// for(int x = 0; x < sampledImagesMap[*camIdIt].size(); x++) {
+					for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
+                        int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
                         //cout << idx << endl;
                         if (*camIdIt == 16043260) {
                             cout << "ignore" << endl;
                             break;
                         }
-						stringstream ss;
-						ss << "HIHI " << idx;
-						//imshow(ss.str(), *i);
-                        Match(sampledImagesMap[*camIdIt].at(x), idx, *camIdIt);
+                        Match(*i, idx, *camIdIt);
                     }
-					imshow("asdf", *sampledImagesMap[*camIdIt].begin());
+					//imshow("asdf", *sampledImagesMap[*camIdIt].begin());
                     
                     end = clock();
                     duration = (double)(end - start) / CLOCKS_PER_SEC;
@@ -340,7 +326,6 @@ imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
                     cout << "********" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
 
 					sleep(3);
-*/
                 }				
                 ofstream outfile2("../gpio_out_cpp");
                 if (outfile2.is_open() ) {
@@ -389,11 +374,11 @@ inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
     akaze->detectAndCompute(sampledImage, noArray(), kpts1, desc1);
     akaze->detectAndCompute(targetImagesMap[camId], noArray(), kpts2, desc2);
 
-	stringstream ss;
-	ss << "sampledImage " << idx;
-	imshow(ss.str(), sampledImage);
+	stringstream xx;
+	xx << "sampledImage " << idx;
+	imshow(xx.str(), sampledImage);
 	imshow("targetImagesMap", targetImagesMap[camId]);
-/*
+
     BFMatcher matcher(NORM_HAMMING);
     vector< vector<DMatch> > nn_matches;
     matcher.knnMatch(desc1, desc2, nn_matches, 2);
@@ -465,7 +450,6 @@ inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
     cout << "# Inliers:        \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:  \t" << inlier_ratio << endl;
     cout << endl;
-*/
 }
 
 void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
