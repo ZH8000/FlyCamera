@@ -29,22 +29,24 @@ file.close()
 # Loop turning the LED on and off and reading the input state.
 print 'Press Ctrl-C to quit.'
 while True:
-	file = open("gpio_result_cpp", "r");
-	result = file.readline()
-	if result == "0\n":
-		print 'Bad product'
-		ft232h.output(12, GPIO.HIGH);
-		ft232h.output(13, GPIO.LOW);
-	if result == "1\n":
-		print 'Good product'
-		ft232h.output(13, GPIO.HIGH);
-		ft232h.output(12, GPIO.LOW);
+
 
 	file = open("gpio_out_cpp", "r")
 	cppState = file.readline()
 	if cppState == "1\n": # move the machine
 		print 'HIGH'
 		ft232h.output(11, GPIO.HIGH)
+
+		file_result_cpp = open("gpio_result_cpp", "r");
+		result = file_result_cpp.readline()
+		if result == "0\n":
+			print 'Bad product'
+			ft232h.output(12, GPIO.HIGH);
+			ft232h.output(13, GPIO.LOW);
+		if result == "1\n":
+			print 'Good product'
+			ft232h.output(13, GPIO.HIGH);
+			ft232h.output(12, GPIO.LOW);
 	else:
 		print 'LOW'       # stop the machine
 		ft232h.output(11, GPIO.LOW)

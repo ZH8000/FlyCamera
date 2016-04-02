@@ -53,6 +53,13 @@ int main(int argc, char** argv) {
         outfile0 << 1 << endl;
         outfile0.close();
     }
+    // init match_result
+    match_result = 1;
+    ofstream resultFile("../gpio_result_cpp");
+    if (resultFile.is_open() ) {
+        resultFile << match_result << endl;
+        resultFile.close();
+    }
 
     // for AKAXE matching
     //FileStorage fs("../H1to3p.xml", FileStorage::READ);
@@ -138,11 +145,11 @@ int main(int argc, char** argv) {
             cout << "Format7 settings are not valid" << endl;
         }
 
-		error = ppCameras[i] -> SetFormat7Configuration(&fmt7ImageSettings, fmt7PacketInfo.recommendedBytesPerPacket );
-	    if (error != PGRERROR_OK) {
-	        PrintError( error );
-     	    return -1;
-    	}
+        error = ppCameras[i] -> SetFormat7Configuration(&fmt7ImageSettings, fmt7PacketInfo.recommendedBytesPerPacket );
+        if (error != PGRERROR_OK) {
+            PrintError( error );
+             return -1;
+        }
 
         // 4. init OpenCV prop &show window(s)
         initOpenCVProp(camInfo.serialNumber, &propCVMap[camInfo.serialNumber]);
@@ -184,12 +191,12 @@ int main(int argc, char** argv) {
             list<unsigned int>::iterator ii;
             for(ii = cameraList.begin(); ii != cameraList.end(); ++ii) {
                 //cout << distance(cameraList.begin(), ii) << " "<< *ii<< endl;
-/*
-				for (std::list<Mat>::iterator iter = sampledImagesMap[*ii].begin(); iter != sampledImagesMap[*ii].end(); ++iter) {
-					(*iter).release();
-				}
-				sampledImagesMap[*ii].clear();
-*/
+
+                for (std::list<Mat>::iterator iter = sampledImagesMap[*ii].begin(); iter != sampledImagesMap[*ii].end(); ++iter) {
+                    (*iter).release();
+                }
+                sampledImagesMap[*ii].clear();
+
                 sampledImagesMap[*ii].clear();
                 for (int x = 0; x < sampleImagesSize; x++) {
                     stringstream ss;
@@ -213,7 +220,7 @@ int main(int argc, char** argv) {
         ifstream infile("../gpio_in_python");
         string line;
         getline(infile, line);
-//		cout << "#0 is here segmentation fault?????????????????????? " << line << endl;
+//        cout << "#0 is here segmentation fault?????????????????????? " << line << endl;
 
 
         if (line == "0") {              // no signal now,
@@ -223,21 +230,15 @@ int main(int argc, char** argv) {
                 c = 's';                // do algorithms
                 oldValue = 1;           // change oldValue = 1;
                 cout << "SLEEP 2 SEC to wait it coming..." << endl;
-                sleep(2);
+				unsigned int sec = 2.5 * 1000 * 1000;
+                usleep(sec);
                 cout << "OVER OVER OVER OVER OVER OVER OVER" << endl;
             } else if (oldValue == 1) { // had signal before...
             }
         }
 
-        // init match_result
-        match_result = 1;
-        ofstream resultFile("../gpio_result_cpp");
-        if (resultFile.is_open() ) {
-            resultFile << match_result << endl;
-            resultFile.close();
-        }
         for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {
-//			cout << "#1 is here segmentation fault??????????????????????" << endl;
+//            cout << "#1 is here segmentation fault??????????????????????" << endl;
         
             // 1. get camera's prop and update
 /* FIXME disable for demo
@@ -287,7 +288,6 @@ int main(int argc, char** argv) {
                     ss << *camIdIt << "_sample_img_" << sampledImagesMap[*camIdIt].size() << ".jpg";
                     imwrite(ss.str(), image);
                 } else { // START compare!
-counting = 0;
                     image.copyTo(targetImagesMap[*camIdIt]);
 
                     // print start time
@@ -301,8 +301,8 @@ counting = 0;
                 
                     list<Mat>::iterator i;
                     //for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
-					// for(int x = 0; x < sampledImagesMap[*camIdIt].size(); x++) {
-					for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
+                    // for(int x = 0; x < sampledImagesMap[*camIdIt].size(); x++) {
+                    for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
                         int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
                         //cout << idx << endl;
                         if (*camIdIt == 16043260) {
@@ -319,21 +319,19 @@ counting = 0;
                     time_t t_e = time(0);
                     struct tm * now_e = localtime( &t_e );
                     cout << "********" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
-
-					sleep(3);
-                }				
+                }
+				ofstream resultFile("../gpio_result_cpp");
+                if (resultFile.is_open() ) {
+                    resultFile << match_result << endl;
+                    resultFile.close();
+                }
+                
                 ofstream outfile2("../gpio_out_cpp");
                 if (outfile2.is_open() ) {
                     outfile2 << 1 << endl;
                     outfile2.close();
                     cout << "write gpio_out_cpp = 1, let machine resume." << endl;
                 }
-                ofstream resultFile("../gpio_result_cpp");
-                if (resultFile.is_open() ) {
-                    resultFile << match_result << endl;
-                    resultFile.close();
-                }
-
             }
 
             stringstream ss;
@@ -341,7 +339,6 @@ counting = 0;
             imshow(ss.str(), image);
         }
     }
-//    Close(io);
     return 0;
 }
     
@@ -428,7 +425,7 @@ inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
     imshow(ss.str(), res);
 
     stringstream ss2;
-    ss2 << camId << "_sample_" << counting++ << ".jpg";
+    ss2 << camId << "_match_" << counting++ << ".jpg";
     imwrite(ss2.str(), res);
 
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
