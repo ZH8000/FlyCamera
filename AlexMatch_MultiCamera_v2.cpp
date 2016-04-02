@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
         sdk.PrintCameraInfo( &camInfo );
         cameraList.push_back(camInfo.serialNumber);
         cameraMap[camInfo.serialNumber] = ppCameras[i];
-        
+
 /*
         // 3. Set all cameras to a specific mode and frame rate so they can be synchronized
         error = ppCameras[i]->SetVideoModeAndFrameRate( 
@@ -157,6 +157,10 @@ int main(int argc, char** argv) {
             PrintError( error );
             return -1;
         }
+
+		// 6. init map
+		// TODO
+		//sampledImagesMap.insert();
     }
 
     char c;
@@ -279,7 +283,12 @@ int main(int argc, char** argv) {
                     cout << "write gpio_out_cpp = 0, let machine pause." << endl;
                 }
                 if(sampledImagesMap[*camIdIt].size() < sampleImagesSize) { // NOT compare
+					// FIXME
+					if ( sampledImagesMap[*camIdIt].size() == 0 ) {
+						sampledImagesMap.insert( std::pair<unsigned int, vector<Mat>>(*camIdIt, vector<Mat> list(image)) );
+					}
                     sampledImagesMap[*camIdIt].push_back(image);
+
                     //cout << "-----Get Sampled Image #" << (++sampleImagesFlag) << "-----" << endl;
                     cout << "-----" << *camIdIt << " 取得樣本影像 第#" << sampledImagesMap[*camIdIt].size() << "-----" << endl;
                     stringstream ss;
@@ -289,6 +298,8 @@ int main(int argc, char** argv) {
 					imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
                     
                 } else { // START compare!
+imshow("樣本＃", *sampledImagesMap[*camIdIt].begin());
+/*
                     image.copyTo(targetImagesMap[*camIdIt]);
 					imshow("比較", image);
 
@@ -329,6 +340,7 @@ int main(int argc, char** argv) {
                     cout << "********" << *camIdIt << " END " << now->tm_hour << ":" << now->tm_min << ":"<< now->tm_sec << "********" << endl;
 
 					sleep(3);
+*/
                 }				
                 ofstream outfile2("../gpio_out_cpp");
                 if (outfile2.is_open() ) {
@@ -341,6 +353,7 @@ int main(int argc, char** argv) {
                     resultFile << match_result << endl;
                     resultFile.close();
                 }
+
             }
 
             stringstream ss;
