@@ -201,6 +201,7 @@ int main(int argc, char** argv) {
             }
         }
 
+		unsigned int window_x_pos = 150;
         for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {        
             // 1. get camera's prop and update
             /* FIXME U-Shine disable
@@ -236,6 +237,10 @@ int main(int argc, char** argv) {
 
 			bool outputResult = false;
             if( c == 's') {
+				// FIXME
+				match_result = 1;
+
+
                 ofstream outfile("../gpio_out_cpp");
                 if (outfile.is_open() ) {
                     outfile << 0 << endl;
@@ -263,11 +268,12 @@ int main(int argc, char** argv) {
                     list<Mat>::iterator i;
                     for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
                         int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
-                        //cout << idx << endl;
+						/* FIXME should I ignore 16043260?
                         if (*camIdIt == 16043260) {
                             cout << "ignore" << endl;
                             break;
                         }
+						*/
                         Match(*i, idx, *camIdIt);
                     }
                     end = clock();
@@ -311,6 +317,9 @@ int main(int argc, char** argv) {
             stringstream ss;
             ss << win_title << *camIdIt;
             imshow(ss.str(), image);
+			resizeWindow(ss.str(), 400, 700);
+			moveWindow(ss.str(), window_x_pos, 10);
+			window_x_pos += 405;
         }
     }
     return 0;
