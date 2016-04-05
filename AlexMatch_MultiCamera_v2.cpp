@@ -325,7 +325,7 @@ int main(int argc, char** argv) {
     return 0;
 }
     
-inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
+void Match(Mat& sampledImage, int idx, unsigned int camId) {
 #if 0
  int sigma = 0.3 * ((5 - 1) * 0.5 - 1) + 0.8;
     GaussianBlur(imag1, img1, Size(3, 3), sigma);
@@ -345,6 +345,15 @@ inline void Match(Mat& sampledImage, int idx, unsigned int camId) {
     Ptr<AKAZE> akaze = AKAZE::create();
     akaze->detectAndCompute(sampledImage, noArray(), kpts1, desc1);
     akaze->detectAndCompute(targetImagesMap[camId], noArray(), kpts2, desc2);
+
+	if (desc1.empty()) {
+		match_result *= 0;
+		return;
+	}
+	if (desc2.empty()) {
+		match_result *= 0;
+		return;
+	}
 
     BFMatcher matcher(NORM_HAMMING);
     vector< vector<DMatch> > nn_matches;
