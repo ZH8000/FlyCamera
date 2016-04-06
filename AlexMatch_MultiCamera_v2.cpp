@@ -10,7 +10,7 @@ using namespace FlyCapture2;
 
 unsigned int match_result = 1;
 unsigned int counting = 0;
-const int sampleImagesSize = 5;
+const int sampleImagesSize = 1;
 const Mode k_fmt7Mode = MODE_1;
 const PixelFormat k_fmt7PixFmt = PIXEL_FORMAT_MONO8;
 map<unsigned int, Camera*> cameraMap;
@@ -19,6 +19,7 @@ map<unsigned int, OpenCVProp> propCVMap;
 map<unsigned int, list<Mat> > sampledImagesMap;
 map<unsigned int, Mat> targetImagesMap;
 list<unsigned int> cameraList;
+ofstream RESULT;
 
 void PrintError( FlyCapture2::Error error ) {
     error.PrintErrorTrace();
@@ -59,6 +60,11 @@ int main(int argc, char** argv) {
         resultFile << match_result << endl;
         resultFile.close();
     }
+
+	if ( ifstream("../RESULT") ) {
+		remove("../RESULT");
+	}
+	RESULT.open("../RESULT", ofstream::out | ofstream::app);
 
     // Connect to all detected cameras and attempt to set them to
     // a common video mode and frame rate
@@ -172,6 +178,16 @@ int main(int argc, char** argv) {
                     destroyWindow(ss.str());
                 }
             }
+			counting = 0;
+
+			ofstream outResult("../RESULT");
+            if (outResult.is_open() ) {
+                outResult << "reset" << endl;
+                outResult.close();
+            }
+
+
+
             cout << "-------Reset Sampled Images-------" << endl;
             
         }
@@ -201,7 +217,7 @@ int main(int argc, char** argv) {
             }
         }
 
-		unsigned int window_x_pos = 150;
+		unsigned int window_x_pos = 50;
         for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {        
             // 1. get camera's prop and update
             /* FIXME U-Shine disable
@@ -268,12 +284,12 @@ int main(int argc, char** argv) {
                     list<Mat>::iterator i;
                     for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
                         int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
-						/* FIXME should I ignore 16043260?
-                        if (*camIdIt == 16043260) {
+						/* FIXME should I ignore 16043257 ? */
+                        if (*camIdIt == 16043257) {
                             cout << "ignore" << endl;
                             break;
                         }
-						*/
+						/* */
                         Match(*i, idx, *camIdIt);
                     }
                     end = clock();
@@ -290,6 +306,7 @@ int main(int argc, char** argv) {
 				if (*camIdIt == *cameraList.rbegin()
 						&& outputResult) { // the last one & not sampleing
 					cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << match_result << endl;
+					RESULT << "# " << counting <<  "  RESULT: " << match_result << endl;
 					cout << *camIdIt << endl;
 					cout << (*cameraList.rbegin()) << endl;
 					ofstream resultFile("../gpio_result_cpp");
@@ -298,6 +315,7 @@ int main(int argc, char** argv) {
 	                    resultFile.close();
 						cout << "write gpio_result_cpp result = " << match_result << endl;
 	                }
+					counting++;
 				}                
 
                 ofstream outfile2("../gpio_out_cpp");
@@ -317,11 +335,12 @@ int main(int argc, char** argv) {
             stringstream ss;
             ss << win_title << *camIdIt;
             imshow(ss.str(), image);
-			resizeWindow(ss.str(), 400, 700);
+			resizeWindow(ss.str(), 300, 700);
 			moveWindow(ss.str(), window_x_pos, 10);
-			window_x_pos += 405;
+			window_x_pos += 305;
         }
     }
+	RESULT.close();
     return 0;
 }
     
@@ -393,14 +412,17 @@ void Match(Mat& sampledImage, int idx, unsigned int camId) {
     Mat res;
     drawMatches(sampledImage, inliers1, targetImagesMap[camId], inliers2, good_matches, res);
     Point pt = Point(100, 100);
-    if (matched1.size() >= successMatches) {
+
+	double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
+
+    if (matched1.size() >= propCVMap[camId].successMatches) {
         stringstream ss;
-        ss << "OOOOO  " << matched1.size();
+        ss << "OO " << matched1.size() << " " << inlier_ratio;
         putText(res, ss.str(), pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
         match_result *= 1;
     } else {
         stringstream ss;
-        ss << "XXXXX  " << matched1.size();
+        ss << "XX " << matched1.size() << " " << inlier_ratio;
         putText(res, ss.str(), pt, CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255));
         match_result *= 0;
     }
@@ -410,10 +432,9 @@ void Match(Mat& sampledImage, int idx, unsigned int camId) {
     imshow(ss.str(), res);
 
     stringstream ss2;
-    ss2 << camId << "_match_" << counting++ << ".jpg";
+    ss2 << camId << "_match_" << counting << ".jpg";
     imwrite(ss2.str(), res);
-
-    double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
+    
     cout << camId << " Alex Matching Results #" << idx << endl;
     cout << "*******************************" << endl;
     cout << "# Keypoints 1:    \t" << kpts1.size() << endl;
@@ -462,7 +483,7 @@ void createTrackbars(unsigned int id, CameraProp *prop, OpenCVProp *propCV) {
     //createTrackbar(binv_title,   ss.str(), &(propCV->binaryInvOnOff), 1);
     //createTrackbar(bina_max,     ss.str(), &(propCV->binaryMax), 150, on_slider_binaryMax, propCV);
     createTrackbar(bina_thresh,  ss.str(), &(propCV->binaryThresh), 150, on_slider_binaryThresh, propCV);
-    createTrackbar(succ_matches, ss.str(), &successMatches, 4000);
+    createTrackbar(succ_matches, ss.str(), &(propCV->successMatches), 4000);
     // createTrackbar(tess_title, win_opencv, &ocrOnOff, 1);
 }
 
@@ -665,6 +686,7 @@ void on_slider_binaryMax(int, void* userdata) {
 }
 
 void on_slider_binaryThresh(int, void* userdata) {
+/* FIXME help~ here is a bug.
     stringstream ss;
     ss.str(std::string());
     ss << win_opencv << ((OpenCVProp*)userdata)->camId;
@@ -674,5 +696,6 @@ void on_slider_binaryThresh(int, void* userdata) {
     } else {
         ((OpenCVProp*)userdata)->oldBinaryThresh = ((OpenCVProp*)userdata)->binaryThresh;
     }
+*/
 }
 // BINARIZATION -end--------------------------
