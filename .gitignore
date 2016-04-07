@@ -6,3 +6,7 @@ CMakeFiles/
 CMakeLists.txt
 Makefile
 cmake_install.cmake
+gpio_in_python
+gpio_out_cpp
+gpio_result_cpp
+RESULT
