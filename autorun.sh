@@ -17,10 +17,10 @@ check_gpio_file() {
 check_gpio_file
 
 #release/app &
-release/app
+#/home/ushine/FlyCamera/release/app &
 
-echo "鍵入 OK 開始啟動機台"
-read INPUT
-echo $INPUT
+#echo "鍵入 OK 開始啟動機台"
+#read INPUT
+#echo $INPUT
 # should add sudo python
-#echo am9km5f7### | sudo -S python gpio_work_v2.py
+echo ushine | sudo -S /home/ushine/FlyCamera/gpio_work_stop.py

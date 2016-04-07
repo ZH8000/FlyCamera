@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # Import standard Python time library.
 import time
 
