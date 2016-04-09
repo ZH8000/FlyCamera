@@ -1,0 +1,45 @@
+cam#1
+    sample0
+    sample1
+    sample2
+    sample3
+    sample4
+
+
+
+cam#2
+    sample0
+    sample1
+    sample2
+    sample3
+    sample4
+
+
+
+cam#3
+    sample0
+    sample1
+    sample2
+    sample3
+    sample4
+
+======================
+default_result = 1
+
+       face0 face1 face2
+
+sample0 x     o     o     -> o
+sample1 x     x     x     -> x
+sample2 x     x     x     -> x
+sample3 o     o     x     -> o
+sample4 o     x     x     -> x
+
+round_result = 0;
+if x :
+	no action;
+else:
+	round_result++;
+
+if round_result == 0:
+	default_result = 0;
+
