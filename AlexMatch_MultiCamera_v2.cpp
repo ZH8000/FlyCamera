@@ -61,10 +61,10 @@ int main(int argc, char** argv) {
         resultFile.close();
     }
 
-	if ( ifstream("../RESULT") ) {
-		remove("../RESULT");
-	}
-	RESULT.open("../RESULT", ofstream::out | ofstream::app);
+    if ( ifstream("../RESULT") ) {
+        remove("../RESULT");
+    }
+    RESULT.open("../RESULT", ofstream::out | ofstream::app);
 
     // Connect to all detected cameras and attempt to set them to
     // a common video mode and frame rate
@@ -178,9 +178,9 @@ int main(int argc, char** argv) {
                     destroyWindow(ss.str());
                 }
             }
-			counting = 0;
+            counting = 0;
 
-			ofstream outResult("../RESULT");
+            ofstream outResult("../RESULT");
             if (outResult.is_open() ) {
                 outResult << "reset" << endl;
                 outResult.close();
@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
             }
         }
 
-		unsigned int window_x_pos = 50;
+        unsigned int window_x_pos = 50;
         for (list<unsigned int>::iterator camIdIt = cameraList.begin(); camIdIt != cameraList.end(); ++camIdIt) {        
             // 1. get camera's prop and update
             /* FIXME U-Shine disable
@@ -251,10 +251,10 @@ int main(int argc, char** argv) {
                 threshold(image, image, propCVMap[*camIdIt].binaryThresh, (propCVMap[*camIdIt].binaryMax+150), CV_THRESH_BINARY);
             }
 
-			bool outputResult = false;
+            bool outputResult = false;
             if( c == 's') {
-				// FIXME
-				match_result = 1;
+                // FIXME
+                match_result = 1;
 
 
                 ofstream outfile("../gpio_out_cpp");
@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
                     ss << *camIdIt << "_sample_img_" << sampledImagesMap[*camIdIt].size() << ".jpg";
                     imwrite(ss.str(), image);
                 } else { // START compare!
-					outputResult = true;
+                    outputResult = true;
                     image.copyTo(targetImagesMap[*camIdIt]);
                     // print start time
                     time_t t_s = time(0);
@@ -284,12 +284,12 @@ int main(int argc, char** argv) {
                     list<Mat>::iterator i;
                     for(i = sampledImagesMap[*camIdIt].begin(); i != sampledImagesMap[*camIdIt].end(); ++i) {
                         int idx =  distance(sampledImagesMap[*camIdIt].begin(), i);
-						/* FIXME should I ignore 16043257 ? */
+                        /* FIXME should I ignore 16043257 ? 
                         if (*camIdIt == 16043257) {
                             cout << "ignore" << endl;
                             break;
                         }
-						/* */
+                        */
                         Match(*i, idx, *camIdIt);
                     }
                     end = clock();
@@ -303,27 +303,26 @@ int main(int argc, char** argv) {
                 }
 
                 // FIXME only write result when this round finish.
-				if (*camIdIt == *cameraList.rbegin()
-						&& outputResult) { // the last one & not sampleing
-					cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << match_result << endl;
-					RESULT << "# " << counting <<  "  RESULT: " << match_result << endl;
-					cout << *camIdIt << endl;
-					cout << (*cameraList.rbegin()) << endl;
-					ofstream resultFile("../gpio_result_cpp");
-	                if (resultFile.is_open() ) {
-	                    resultFile << match_result << endl;
-	                    resultFile.close();
-						cout << "write gpio_result_cpp result = " << match_result << endl;
-	                }
-					counting++;
-				}                
+                if (*camIdIt == *cameraList.rbegin()
+                        && outputResult) { // the last one & not sampleing
+                    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << match_result << endl;
+                    RESULT << "# " << counting <<  "  RESULT: " << match_result << endl;
+                    ofstream resultFile("../gpio_result_cpp");
+                    if (resultFile.is_open() ) {
+                        resultFile << match_result << endl;
+                        resultFile.close();
+                        cout << "write gpio_result_cpp result = " << match_result << endl;
+                    }
+                    counting++;
 
-                ofstream outfile2("../gpio_out_cpp");
-                if (outfile2.is_open() ) {
-                    outfile2 << 1 << endl;
-                    outfile2.close();
-                    cout << "write gpio_out_cpp = 1, let machine resume." << endl;
-                }
+					ofstream outfile2("../gpio_out_cpp");
+                	if (outfile2.is_open() ) {
+	                    outfile2 << 1 << endl;
+	                    outfile2.close();
+	                    cout << "write gpio_out_cpp = 1, let machine resume." << endl;
+	                }
+                }                
+            
 /*
                 cout << "SLEEP 2 SEC to wait it go out~" << endl;
                 unsigned int sec_bye = 2.5 * 1000 * 1000;
@@ -335,12 +334,12 @@ int main(int argc, char** argv) {
             stringstream ss;
             ss << win_title << *camIdIt;
             imshow(ss.str(), image);
-			resizeWindow(ss.str(), 300, 700);
-			moveWindow(ss.str(), window_x_pos, 10);
-			window_x_pos += 305;
+            resizeWindow(ss.str(), 300, 700);
+            moveWindow(ss.str(), window_x_pos, 10);
+            window_x_pos += 305;
         }
     }
-	RESULT.close();
+    RESULT.close();
     return 0;
 }
     
@@ -365,14 +364,14 @@ void Match(Mat& sampledImage, int idx, unsigned int camId) {
     akaze->detectAndCompute(sampledImage, noArray(), kpts1, desc1);
     akaze->detectAndCompute(targetImagesMap[camId], noArray(), kpts2, desc2);
 
-	if (desc1.empty()) {
-		match_result *= 0;
-		return;
-	}
-	if (desc2.empty()) {
-		match_result *= 0;
-		return;
-	}
+    if (desc1.empty()) {
+        match_result *= 0;
+        return;
+    }
+    if (desc2.empty()) {
+        match_result *= 0;
+        return;
+    }
 
     BFMatcher matcher(NORM_HAMMING);
     vector< vector<DMatch> > nn_matches;
@@ -413,7 +412,7 @@ void Match(Mat& sampledImage, int idx, unsigned int camId) {
     drawMatches(sampledImage, inliers1, targetImagesMap[camId], inliers2, good_matches, res);
     Point pt = Point(100, 100);
 
-	double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
+    double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
 
     if (matched1.size() >= propCVMap[camId].successMatches) {
         stringstream ss;
